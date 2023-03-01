@@ -4,28 +4,25 @@ Distributed Systems Project 2022/2023
 
 ## Authors
 
-*(fill the line below with the group identifier, for example A25 or T25, and then delete this line)*  
-**Group GXX**
+**Group A47**
 
 ### Code Identification
 
-In all source files (namely in the *groupId*s of the POMs), replace __GXX__ with your group identifier. The group
-identifier consists of either A or T followed by the group number - always two digits. This change is important for 
+In all source files (namely in the *groupId*s of the POMs), replace **GXX** with your group identifier. The group
+identifier consists of either A or T followed by the group number - always two digits. This change is important for
 code dependency management, to ensure your code runs using the correct components and not someone else's.
 
 ### Team Members
 
-*(fill the table below with the team members, and then delete this line)*
-
-| Number | Name              | User                             | Email                               |
-|--------|-------------------|----------------------------------|-------------------------------------|
-| 11111  | Alice Distributed | <https://github.com/AliceUser>   | <mailto:alice@tecnico.ulisboa.pt>   |
-| 22222  | Bob Systems       | <https://github.com/BobUser>     | <mailto:bob@tecnico.ulisboa.pt>     |
-| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt> |
+| Number | Name               | User                               | Email                                        |
+| ------ | ------------------ | ---------------------------------- | -------------------------------------------- |
+| 92424  | André Azevedo      | <https://github.com/andremazevedo> | <mailto:andre.m.azevedo@tecnico.ulisboa.pt>  |
+| 99251  | João Cardoso       | <https://github.com/joaoncardoso>  | <mailto:joao.n.m.cardoso@tecnico.ulisboa.pt> |
+| 99259  | José João Ferreira | <https://github.com/jjasferreira>  | <mailto:josejoaoferreira@tecnico.ulisboa.pt> |
 
 ## Getting Started
 
-The overall system is made up of several modules. The main server is the _DistLedgerServer_. The clients are the _User_ 
+The overall system is made up of several modules. The main server is the _DistLedgerServer_. The clients are the _User_
 and the _Admin_. The definition of messages and services is in the _Contract_. The future naming server
 is the _NamingServer_.
 
@@ -53,5 +50,5 @@ mvn clean install
 
 ## Built With
 
-* [Maven](https://maven.apache.org/) - Build and dependency management tool;
-* [gRPC](https://grpc.io/) - RPC framework.
+- [Maven](https://maven.apache.org/) - Build and dependency management tool;
+- [gRPC](https://grpc.io/) - RPC framework.
