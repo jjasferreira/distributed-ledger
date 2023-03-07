@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.userclient;
 
 import pt.tecnico.distledger.userclient.grpc.UserService;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 
 import java.util.Scanner;
 
@@ -53,6 +54,7 @@ public class CommandParser {
                         break;
 
                     case EXIT:
+                        userService.shutdownNow();
                         exit = true;
                         break;
 
@@ -77,7 +79,10 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        System.out.println("TODO: implement createAccount command");
+        // System.out.println("TODO: implement createAccount command");
+        CreateAccountResponse response = userService.createAccount(server, username);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void deleteAccount(String line){
@@ -90,7 +95,10 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        System.out.println("TODO: implement deleteAccount command");
+        // System.out.println("TODO: implement deleteAccount command");
+        DeleteAccountResponse response = userService.deleteAccount(server, username);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
 
@@ -104,7 +112,10 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        System.out.println("TODO: implement balance command");
+        // System.out.println("TODO: implement balance command");
+        BalanceResponse response = userService.balance(server, username);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void transferTo(String line){
@@ -119,7 +130,10 @@ public class CommandParser {
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
 
-        System.out.println("TODO: implement transferTo command");
+        // System.out.println("TODO: implement transferTo command");
+        TransferToResponse response = userService.tranferTo(server, from, dest, amount);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void printUsage() {
