@@ -5,19 +5,19 @@ import "DistLedgerCommonDefinitions.proto";
 
 // Administrator Interface of the DistLedger Service
 
-message ActivateRequest {}
+message ActivateRequest {} // TODO
 
-message ActivateResponse {}
+message ActivateResponse {} // TODO
 
-message DeactivateRequest {}
+message DeactivateRequest {} // TODO
 
-message DeactivateResponse {}
+message DeactivateResponse {} // TODO
 
 message GossipRequest {}
 
 message GossipResponse {}
 
-message getLedgerStateRequest {}
+message getLedgerStateRequest {} // TODO
 
 message getLedgerStateResponse {
   LedgerState ledgerState = 1;

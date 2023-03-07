@@ -4,9 +4,11 @@ import pt.tecnico.distledger.server.domain.operation.Operation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
 
 public class ServerState {
     private List<Operation> ledger;
+    private HashMap<Integer, String> accounts; // QUAL A KEY A USAR?
 
     public ServerState() {
         this.ledger = new ArrayList<>();
