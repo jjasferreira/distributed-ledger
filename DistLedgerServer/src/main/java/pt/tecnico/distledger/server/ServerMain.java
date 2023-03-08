@@ -4,8 +4,6 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import pt.tecnico.distledger.server.grpc.ServerService;
-
 // Exceptions
 import java.io.IOException;
 
@@ -29,10 +27,10 @@ public class ServerMain {
 		}
 
 		final int port = Integer.parseInt(args[0]);
-		final BindableService impl = new ServerService();
+		final BindableService usrImpl = new UserServiceImpl();
 
 		// Create a new server to listen on port
-		Server server = ServerBuilder.forPort(port).addService(impl).build();
+		Server server = ServerBuilder.forPort(port).addService(usrImpl).build();
 
 		// Start the server
 		try {
@@ -40,7 +38,6 @@ public class ServerMain {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//refactor this
 
 		// Server threads are running in the background.
 		System.out.println("Server started");
