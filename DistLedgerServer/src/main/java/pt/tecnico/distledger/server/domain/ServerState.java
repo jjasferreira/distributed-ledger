@@ -1,6 +1,6 @@
 package pt.tecnico.distledger.server.domain;
 
-import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.tecnico.distledger.server.domain.operation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,11 +13,7 @@ public class ServerState {
     public ServerState() {
         this.ledger = new ArrayList<>();
         this.accounts = new HashMap<>();
-        accounts.put("Broker", 1000f);
-    }
-
-    public void addOperation(Operation op) {
-        this.ledger.add(op);
+        accounts.put("broker", 1000);
     }
 
     public List<Operation> getLedger() {
@@ -27,32 +23,48 @@ public class ServerState {
     public HashMap<String, Integer> getAccounts() {
         return this.accounts;
     }
+    public void addOperation(Operation op) {
+        this.ledger.add(op);
+    }
 
-    public void addAccount(String account, Integer balance) {
-        if (accounts.containsKey(account)) {
-            throw new IllegalArgumentException("Account already exists");
+    public int createAccount(String account) {
+        if (!accounts.containsKey(account)) {
+            this.accounts.put(account, 0);
+            ledger.add(new CreateOp(account));
+            return 0;
+        } else {
+            return -1;
         }
-        this.accounts.put(account, balance);
+    }
+
+    public int deleteAccount(String account) {
+        if (this.accounts.remove(account) != null) {
+            ledger.add(new DeleteOp(account));
+            return 0;
+        }
+        return -1;
     }
 
     public int getBalance(String account) {
-        if (!accounts.containsKey(account)) {
-            throw new IllegalArgumentException("Account does not exist");
+        if (accounts.containsKey(account)) {
+            return this.accounts.get(account);
         }
-        return this.accounts.get(account);
+        return -1;
     }
 
-    public List<Operation> getOperations(String account) {
-        if (!accounts.containsKey(account)) {
-            throw new IllegalArgumentException("Account does not exist");
+    public int transferTo(String accountFrom, String accountTo, int amount) {
+        if (!accounts.containsKey(accountFrom)) {
+            return -1;
         }
-        List<Operation> operations = new ArrayList<>();
-        for (Operation op : this.ledger) {
-            if (op.getAccount().equals(account)) {
-                operations.add(op);
-            }
+        if (!accounts.containsKey(accountTo)) {
+            return -2;
         }
-        return operations;
+        if (accounts.get(accountFrom) < amount) {
+            return -3;
+        }
+        accounts.put(accountFrom, accounts.get(accountFrom) - amount);
+        accounts.put(accountTo, accounts.get(accountTo) + amount);
+        return 0;
     }
 
 }
