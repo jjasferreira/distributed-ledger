@@ -12,8 +12,6 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
         This should include a method that builds a channel and stub,
         as well as individual methods for each remote operation of this service. */
 
-    // TODO create new blocking
-
     private final ServerState state;
 
     public UserServiceImpl(ServerState state) {
@@ -38,9 +36,24 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
         responseObserver.onCompleted();
     }
 
-    /*DistLedger
-    * -> UserImpl
-    * ->AdminImpl
-    * ->State*/
-    
+    @Override
+    public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
+        String username = request.getUserId();
+        state.deleteAccount(username);
+        DeleteAccountResponse response = DeleteAccountResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
+        String from = request.getAccountFrom();
+        String to = request.getAccountTo();
+        int amount = request.getAmount();
+        state.transferTo(from, to, amount);
+        TransferToResponse response = TransferToResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+
 }
