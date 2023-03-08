@@ -68,9 +68,22 @@ public class CommandParser {
         }
     }
 
+    private void balance(String line){
+        String[] split = line.split(SPACE);
+        if (split.length != 3){
+            this.printUsage();
+            return;
+        }
+        String server = split[1];
+        String username = split[2];
+
+        BalanceResponse response = userService.balance(server, username);
+        System.out.println("OK");
+        System.out.println(response);
+    }
+
     private void createAccount(String line){
         String[] split = line.split(SPACE);
-
         if (split.length != 3){
             this.printUsage();
             return;
@@ -79,7 +92,6 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        // System.out.println("TODO: implement createAccount command");
         CreateAccountResponse response = userService.createAccount(server, username);
         System.out.println("OK");
         System.out.println(response);
@@ -87,7 +99,6 @@ public class CommandParser {
 
     private void deleteAccount(String line){
         String[] split = line.split(SPACE);
-
         if (split.length != 3){
             this.printUsage();
             return;
@@ -95,32 +106,13 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        // System.out.println("TODO: implement deleteAccount command");
         DeleteAccountResponse response = userService.deleteAccount(server, username);
-        System.out.println("OK");
-        System.out.println(response);
-    }
-
-
-    private void balance(String line){
-        String[] split = line.split(SPACE);
-
-        if (split.length != 3){
-            this.printUsage();
-            return;
-        }
-        String server = split[1];
-        String username = split[2];
-
-        // System.out.println("TODO: implement balance command");
-        BalanceResponse response = userService.balance(server, username);
         System.out.println("OK");
         System.out.println(response);
     }
 
     private void transferTo(String line){
         String[] split = line.split(SPACE);
-
         if (split.length != 5){
             this.printUsage();
             return;

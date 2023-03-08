@@ -1,6 +1,6 @@
 package pt.tecnico.distledger.server.domain;
 
-import pt.tecnico.distledger.server.domain.operation.Operation;
+import pt.tecnico.distledger.server.domain.operation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,15 +10,20 @@ public class ServerState {
     private final List<Operation> ledger;
     private final HashMap<String, Integer> accounts;
 
-    public ServerState() {
+    private boolean debug = false;
+
+    public ServerState(boolean debug) {
         this.ledger = new ArrayList<>();
         this.accounts = new HashMap<>();
-        accounts.put("Broker", 1000f);
+        this.debug = debug;
+        accounts.put("broker", 1000);
     }
 
-    public void addOperation(Operation op) {
-        this.ledger.add(op);
+    private void debug(String debugMsg) {
+        if (this.debug)
+            System.err.println("[DEBUG] " + debugMsg);
     }
+
 
     public List<Operation> getLedger() {
         return this.ledger;
@@ -27,32 +32,71 @@ public class ServerState {
     public HashMap<String, Integer> getAccounts() {
         return this.accounts;
     }
+    public void addOperation(Operation op) {
+        this.ledger.add(op);
+    }
 
-    public void addAccount(String account, Integer balance) {
-        if (accounts.containsKey(account)) {
-            throw new IllegalArgumentException("Account already exists");
+    public int createAccount(String account) {
+        debug("Creating account " + account + "...");
+        if (!accounts.containsKey(account)) {
+            this.accounts.put(account, 0);
+            ledger.add(new CreateOp(account));
+            debug("OK");
+            return 0;
+        } else {
+            debug("NOK: " + account + " already exists");
+            return -1;
         }
-        this.accounts.put(account, balance);
+    }
+
+    public int deleteAccount(String account) {
+        debug("Deleting account " + account + "...");
+        if (accounts.remove(account) != null) {
+            ledger.add(new DeleteOp(account));
+            debug("OK");
+            return 0;
+        }
+        debug("NOK: " + account + " does not exist");
+        return -1;
     }
 
     public int getBalance(String account) {
-        if (!accounts.containsKey(account)) {
-            throw new IllegalArgumentException("Account does not exist");
+        debug("Getting balance of account " + account + "...");
+        if (accounts.containsKey(account)) {
+            debug("OK: " + accounts.get(account));
+            return this.accounts.get(account);
         }
-        return this.accounts.get(account);
+        debug("NOK: " + account + " does not exist");
+        return -1;
     }
 
-    public List<Operation> getOperations(String account) {
-        if (!accounts.containsKey(account)) {
-            throw new IllegalArgumentException("Account does not exist");
+    public int transferTo(String accountFrom, String accountTo, int amount) {
+        debug("Transferring " + amount + " from " + accountFrom + " to " + accountTo);
+        if (!accounts.containsKey(accountFrom)) {
+            debug("NOK: " + accountFrom + " does not exist");
+            return -1;
         }
-        List<Operation> operations = new ArrayList<>();
-        for (Operation op : this.ledger) {
-            if (op.getAccount().equals(account)) {
-                operations.add(op);
-            }
+        if (!accounts.containsKey(accountTo)) {
+            debug("NOK: " + accountTo + " does not exist");
+            return -2;
         }
-        return operations;
+        if (accounts.get(accountFrom) < amount) {
+            debug("NOK: " + accountFrom + " does not have enough money");
+            return -3;
+        }
+        if (amount < 0) {
+            debug("NOK: " + amount + " is not a valid amount");
+            return -4;
+        }
+        if (accountFrom.equals(accountTo)) {
+            debug("NOK: " + accountFrom + " and " + accountTo + " are the same account");
+            return -5;
+        }
+        accounts.put(accountFrom, accounts.get(accountFrom) - amount);
+        accounts.put(accountTo, accounts.get(accountTo) + amount);
+        ledger.add(new TransferOp(accountFrom, accountTo, amount));
+        debug("OK");
+        return 0;
     }
 
 }

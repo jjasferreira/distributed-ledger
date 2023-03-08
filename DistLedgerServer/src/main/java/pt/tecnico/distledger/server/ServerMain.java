@@ -10,14 +10,20 @@ import java.io.IOException;
 
 public class ServerMain {
 
+	private static final String DEBUG_FLAG = "-debug";
     public static void main(String[] args) {
+
         System.out.println(ServerMain.class.getSimpleName());
 
+		boolean debug = false;
         // receive and print arguments
         // TODO: add debug flag
 		System.out.printf("Received %d arguments%n", args.length);
 		for (int i = 0; i < args.length; i++) {
 			System.out.printf("arg[%d] = %s%n", i, args[i]);
+			if (args[i].equals(DEBUG_FLAG)) {
+				debug = true;
+			}
 		}
 
 		// check arguments
@@ -27,7 +33,7 @@ public class ServerMain {
 			return;
 		}
 
-		ServerState state = new ServerState();
+		ServerState state = new ServerState(debug);
 		final int port = Integer.parseInt(args[0]);
 		final BindableService usrImpl = new UserServiceImpl(state);
 
