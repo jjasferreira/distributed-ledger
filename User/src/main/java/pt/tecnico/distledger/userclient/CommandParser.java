@@ -115,7 +115,7 @@ public class CommandParser {
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
 
-        userService.tranferTo(server, from, dest, amount);
+        userService.transferTo(server, from, dest, amount);
     }
 
     private void printUsage() {

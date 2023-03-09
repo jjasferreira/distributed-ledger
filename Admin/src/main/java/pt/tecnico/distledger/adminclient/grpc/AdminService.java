@@ -3,13 +3,8 @@ package pt.tecnico.distledger.adminclient.grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.ActivateRequest;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.ActivateResponse;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.DeactivateRequest;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.DeactivateResponse;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateRequest;
-import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.getLedgerStateResponse;
+import pt.ulisboa.tecnico.distledger.contract.admin.*;
+import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.*;
 
 public class AdminService {
 
