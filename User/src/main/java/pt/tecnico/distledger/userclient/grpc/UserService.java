@@ -29,43 +29,29 @@ public class UserService {
         stub = UserServiceGrpc.newBlockingStub(channel);
     }
 
-    public void createAccount(String server, String username) {
-        try{
-            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build();
-            CreateAccountResponse response = stub.createAccount(request);
-            System.out.println("OK");
-            System.out.println(response);
-        }
-        catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-        }
+    public String createAccount(String server, String username) {
+        CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build();
+        CreateAccountResponse response = stub.createAccount(request);
+        return response.toString();
     }
 
-    public void deleteAccount(String server, String username) {
-        try{
-            DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
-            DeleteAccountResponse response = stub.deleteAccount(request);
-            System.out.println("OK");
-            System.out.println(response);
-        }
-        catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-        }
+    public String deleteAccount(String server, String username) {
+        DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
+        DeleteAccountResponse response = stub.deleteAccount(request);
+        return response.toString();
     }
 
     public void balance(String server, String username) {
         try{
             BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
             BalanceResponse response = stub.balance(request);
-            System.out.println("OK");
-            System.out.println(response);
         }
         catch (StatusRuntimeException e) {
             System.out.println("Caught exception with description: " + e.getStatus().getDescription());
         }
     }
 
-    public void tranferTo(String server, String from, String dest, Integer amount) {
+    public void transferTo(String server, String from, String dest, Integer amount) {
         try{
             TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
             TransferToResponse response = stub.transferTo(request);

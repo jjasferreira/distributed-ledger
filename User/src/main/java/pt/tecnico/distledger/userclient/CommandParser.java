@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.userclient;
 
+import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.userclient.grpc.UserService;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 
@@ -62,6 +63,9 @@ public class CommandParser {
                         break;
                 }
             }
+            catch (StatusRuntimeException e) {
+                System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+            }
             catch (Exception e){
                 System.err.println(e.getMessage());
             }
@@ -77,7 +81,9 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        userService.createAccount(server, username);
+        String response = userService.createAccount(server, username);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void deleteAccount(String line){
@@ -89,7 +95,9 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        userService.deleteAccount(server, username);
+        String response = userService.deleteAccount(server, username);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void balance(String line){
@@ -101,7 +109,9 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        userService.balance(server, username);
+        String response = userService.balance(server, username);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void transferTo(String line){
