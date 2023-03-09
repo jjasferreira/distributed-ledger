@@ -1,9 +1,10 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.ServerState;
+
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import pt.tecnico.distledger.server.domain.ServerState;
 
 // Exceptions
 import java.io.IOException;
@@ -16,8 +17,8 @@ public class ServerMain {
         System.out.println(ServerMain.class.getSimpleName());
 
 		boolean debug = false;
-        // receive and print arguments
-        // TODO: add debug flag
+
+        // Receive and print arguments
 		System.out.printf("Received %d arguments%n", args.length);
 		for (int i = 0; i < args.length; i++) {
 			System.out.printf("arg[%d] = %s%n", i, args[i]);
@@ -26,19 +27,21 @@ public class ServerMain {
 			}
 		}
 
-		// check arguments
+		// Check arguments
 		if (args.length < 1) {
 			System.err.println("Argument(s) missing!");
 			System.err.printf("Usage: java %s port%n", ServerMain.class.getName());
 			return;
 		}
 
+		// Instantiate a new server state and service implementations
 		ServerState state = new ServerState(debug);
 		final int port = Integer.parseInt(args[0]);
-		final BindableService usrImpl = new UserServiceImpl(state);
+		final BindableService userImpl = new UserServiceImpl(state);
+		final BindableService adminImpl = new AdminServiceImpl(state);
 
 		// Create a new server to listen on port
-		Server server = ServerBuilder.forPort(port).addService(usrImpl).build();
+		Server server = ServerBuilder.forPort(port).addService(userImpl).addService(adminImpl).build();
 
 		// Start the server TODO reconsider exception handling
 		try {
@@ -57,9 +60,6 @@ public class ServerMain {
 			e.printStackTrace();
 		}
 
-        // create server socket
-
     }
 
 }
-

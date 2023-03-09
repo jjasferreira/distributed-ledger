@@ -1,10 +1,10 @@
 package pt.tecnico.distledger.userclient.grpc;
 
+import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
+import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
+
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
-import pt.ulisboa.tecnico.distledger.contract.user.*;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 
 public class UserService {
 
@@ -41,26 +41,16 @@ public class UserService {
         return response.toString();
     }
 
-    public void balance(String server, String username) {
-        try{
-            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
-            BalanceResponse response = stub.balance(request);
-        }
-        catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-        }
+    public String balance(String server, String username) {
+        BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
+        BalanceResponse response = stub.balance(request);
+        return response.toString();
     }
 
-    public void transferTo(String server, String from, String dest, Integer amount) {
-        try{
-            TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
-            TransferToResponse response = stub.transferTo(request);
-            System.out.println("OK");
-            System.out.println(response);
-        }
-        catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-        }
+    public String transferTo(String server, String from, String dest, Integer amount) {
+        TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+        TransferToResponse response = stub.transferTo(request);
+        return response.toString();
     }
 
     public void shutdownNow() {

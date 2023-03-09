@@ -2,7 +2,6 @@ package pt.tecnico.distledger.userclient;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.userclient.grpc.UserService;
-import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 
 import java.util.Scanner;
 
@@ -63,8 +62,9 @@ public class CommandParser {
                         break;
                 }
             }
+            //TODO: try different variations
             catch (StatusRuntimeException e) {
-                System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+                System.err.println("Caught exception with description: " + e.getStatus().getDescription());
             }
             catch (Exception e){
                 System.err.println(e.getMessage());
@@ -125,7 +125,9 @@ public class CommandParser {
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
 
-        userService.transferTo(server, from, dest, amount);
+        String response = userService.transferTo(server, from, dest, amount);
+        System.out.println("OK");
+        System.out.println(response);
     }
 
     private void printUsage() {
