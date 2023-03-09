@@ -68,33 +68,16 @@ public class CommandParser {
         }
     }
 
-    private void balance(String line){
-        String[] split = line.split(SPACE);
-        if (split.length != 3){
-            this.printUsage();
-            return;
-        }
-        String server = split[1];
-        String username = split[2];
-
-        BalanceResponse response = userService.balance(server, username);
-        System.out.println("OK");
-        System.out.println(response);
-    }
-
     private void createAccount(String line){
         String[] split = line.split(SPACE);
         if (split.length != 3){
             this.printUsage();
             return;
         }
-
         String server = split[1];
         String username = split[2];
 
-        CreateAccountResponse response = userService.createAccount(server, username);
-        System.out.println("OK");
-        System.out.println(response);
+        userService.createAccount(server, username);
     }
 
     private void deleteAccount(String line){
@@ -106,9 +89,19 @@ public class CommandParser {
         String server = split[1];
         String username = split[2];
 
-        DeleteAccountResponse response = userService.deleteAccount(server, username);
-        System.out.println("OK");
-        System.out.println(response);
+        userService.deleteAccount(server, username);
+    }
+
+    private void balance(String line){
+        String[] split = line.split(SPACE);
+        if (split.length != 3){
+            this.printUsage();
+            return;
+        }
+        String server = split[1];
+        String username = split[2];
+
+        userService.balance(server, username);
     }
 
     private void transferTo(String line){
@@ -122,10 +115,7 @@ public class CommandParser {
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
 
-        // System.out.println("TODO: implement transferTo command");
-        TransferToResponse response = userService.tranferTo(server, from, dest, amount);
-        System.out.println("OK");
-        System.out.println(response);
+        userService.tranferTo(server, from, dest, amount);
     }
 
     private void printUsage() {

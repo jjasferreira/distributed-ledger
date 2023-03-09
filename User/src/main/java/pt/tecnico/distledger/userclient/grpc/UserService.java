@@ -2,6 +2,7 @@ package pt.tecnico.distledger.userclient.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 import pt.ulisboa.tecnico.distledger.contract.user.*;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 
@@ -28,30 +29,53 @@ public class UserService {
         stub = UserServiceGrpc.newBlockingStub(channel);
     }
 
-    public CreateAccountResponse createAccount(String server, String username) {
-        CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build();
-        CreateAccountResponse response = stub.createAccount(request);
-        return response;
+    public void createAccount(String server, String username) {
+        try{
+            CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build();
+            CreateAccountResponse response = stub.createAccount(request);
+            System.out.println("OK");
+            System.out.println(response);
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+        }
     }
 
-    public DeleteAccountResponse deleteAccount(String server, String username) {
-        DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
-        DeleteAccountResponse response = stub.deleteAccount(request);
-        return response;
+    public void deleteAccount(String server, String username) {
+        try{
+            DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
+            DeleteAccountResponse response = stub.deleteAccount(request);
+            System.out.println("OK");
+            System.out.println(response);
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+        }
     }
 
-    public BalanceResponse balance(String server, String username) {
-        BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
-        BalanceResponse response = stub.balance(request);
-        return response;
+    public void balance(String server, String username) {
+        try{
+            BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
+            BalanceResponse response = stub.balance(request);
+            System.out.println("OK");
+            System.out.println(response);
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+        }
     }
 
-    public TransferToResponse tranferTo(String server, String from, String dest, Integer amount) {
-        TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
-        TransferToResponse response = stub.transferTo(request);
-        return response;
+    public void tranferTo(String server, String from, String dest, Integer amount) {
+        try{
+            TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+            TransferToResponse response = stub.transferTo(request);
+            System.out.println("OK");
+            System.out.println(response);
+        }
+        catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+        }
     }
-
 
     public void shutdownNow() {
         // A Channel should be shutdown before stopping the process.
