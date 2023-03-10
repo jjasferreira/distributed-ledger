@@ -6,12 +6,6 @@ Distributed Systems Project 2022/2023
 
 **Group A47**
 
-### Code Identification
-
-In all source files (namely in the *groupId*s of the POMs), replace **GXX** with your group identifier. The group
-identifier consists of either A or T followed by the group number - always two digits. This change is important for
-code dependency management, to ensure your code runs using the correct components and not someone else's.
-
 ### Team Members
 
 | Number | Name               | User                               | Email                                        |
@@ -40,12 +34,40 @@ javac -version
 mvn -version
 ```
 
-### Installation
+### Installation and running
 
-To compile and install all modules:
+1. To compile and install all modules:
 
 ```s
 mvn clean install
+```
+
+2. Then, to generate the code for the client and server stubs:
+
+```s
+cd Contract
+mvn install
+```
+
+3. To compile and run the server:
+
+```s
+cd DistLedgerServer
+mvn compile exec:java Dexec.args="2001 A [-debug]"
+```
+
+The `-debug` flag is optional and prints to the terminal all user interactions
+
+4. Then, you can finally execute multiple instances of admins and/or users by opening new terminals and running:
+
+```s
+cd Admin
+mvn compile exec:java
+```
+
+```s
+cd User
+mvn compile exec:java
 ```
 
 ## Built With
