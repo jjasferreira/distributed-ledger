@@ -68,7 +68,10 @@ public class ServerState {
     public List<Operation> getLedger() {
         debug("> Getting ledger state...");
         debug("OK");
-        return ledger;
+        // All blocks that modify the ledger must have access to accounts
+        synchronized (accounts) {
+            return ledger;
+        }
     }
 
     public void gossip() {
@@ -105,12 +108,11 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new ServerStateException("INACTIVE");
             }
-            //TODO which verifications don't need to be synchronized?
+            if (account.equals("broker")) {
+                debug("NOK: " + account + " is the broker account");
+                throw new ServerStateException("IS_BROKER");
+            }
             synchronized (accounts) {
-                if (account.equals("broker")) {
-                    debug("NOK: " + account + " is the broker account");
-                    throw new ServerStateException("IS_BROKER");
-                }
                 if (!accounts.containsKey(account)) {
                     debug("NOK: " + account + " does not exist");
                     throw new ServerStateException("DOES_NOT_EXIST");
