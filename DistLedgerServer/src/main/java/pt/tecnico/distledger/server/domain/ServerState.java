@@ -35,7 +35,7 @@ public class ServerState {
             System.err.println("[DEBUG] " + debugMsg);
     }
 
-    public void activate() {
+    public void activate() throws ServerStateException {
         // TODO admin exception
         debug("> Activating server...");
         activeLock.writeLock().lock();
@@ -43,8 +43,8 @@ public class ServerState {
             if (active) {
                 debug("NOK: server already active");
                 throw new ServerStateException("ALREADY_ACTIVE");
-        active = true;
             }
+            active = true;
         } finally {
             activeLock.writeLock().unlock();
         }
