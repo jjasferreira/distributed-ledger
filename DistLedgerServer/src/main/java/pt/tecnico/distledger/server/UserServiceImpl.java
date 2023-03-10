@@ -103,7 +103,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             } else if (e.getMessage().equals("NOT_ENOUGH_MONEY")) {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Insufficient funds for transfer").asRuntimeException());
             } else if (e.getMessage().equals("INVALID_AMOUNT")) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Amount cannot be negative").asRuntimeException());
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("Amount must be greater than 0").asRuntimeException());
             } else if (e.getMessage().equals("SAME_ACCOUNT")) {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Sender and receiver are the same").asRuntimeException());
             } else {

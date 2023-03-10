@@ -1,17 +1,16 @@
 package pt.tecnico.distledger.server;
 
-import com.google.longrunning.ListOperationsResponse;
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.domain.operation.*;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.*;
-
-import io.grpc.stub.StreamObserver;
-
-import pt.tecnico.distledger.server.domain.operation.*;
-import java.util.List;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.LedgerState;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
+
+import io.grpc.stub.StreamObserver;
+
+import java.util.List;
 
 import static io.grpc.Status.INVALID_ARGUMENT;
 
@@ -32,7 +31,7 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             responseObserver.onCompleted();
         } catch (Exception e) {
             if (e.getMessage().equals("ALREADY_ACTIVE")) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Server was already active").asRuntimeException());
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already active").asRuntimeException());
             } else {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
                 e.printStackTrace();
@@ -49,7 +48,7 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             responseObserver.onCompleted();
         } catch (Exception e) {
             if (e.getMessage().equals("ALREADY_INACTIVE")) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Server was already inactive").asRuntimeException());
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already inactive").asRuntimeException());
             } else {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
                 e.printStackTrace();
@@ -79,7 +78,6 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             ledgerStateBuilder.addLedger(operation);
         }
         LedgerState ledgerState = ledgerStateBuilder.build();
-
         GetLedgerStateResponse response = GetLedgerStateResponse.newBuilder().setLedgerState(ledgerState).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();

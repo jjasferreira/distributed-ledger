@@ -36,7 +36,6 @@ public class ServerState {
     }
 
     public void activate() throws ServerStateException {
-        // TODO admin exception
         debug("> Activating server...");
         activeLock.writeLock().lock();
         try {
@@ -51,10 +50,14 @@ public class ServerState {
         debug("OK");
     }
 
-    public void deactivate() {
+    public void deactivate() throws ServerStateException {
         debug("> Deactivating server...");
         activeLock.writeLock().lock();
         try {
+            if (!active) {
+                debug("NOK: server already inactive");
+                throw new ServerStateException("ALREADY_INACTIVE");
+            }
             active = false;
         } finally {
             activeLock.writeLock().unlock();
