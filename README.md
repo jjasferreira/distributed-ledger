@@ -53,10 +53,10 @@ mvn install
 
 ```s
 cd DistLedgerServer
-mvn compile exec:java Dexec.args="2001 A [-debug]"
+mvn compile exec:java -Dexec.args="2001 A [-debug]"
 ```
 
-The `-debug` flag is optional and prints to the terminal all user interactions
+The `-debug` flag is optional and prints all user and admin interactions to the terminal.
 
 4. Then, you can finally execute multiple instances of admins and/or users by opening new terminals and running:
 
