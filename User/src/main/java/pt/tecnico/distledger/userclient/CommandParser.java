@@ -59,10 +59,10 @@ public class CommandParser {
                         break;
 
                     default:
+                        System.err.println("Invalid command");
                         break;
                 }
             }
-            //TODO: try different variations
             catch (StatusRuntimeException e) {
                 System.err.println("Caught exception with description: " + e.getStatus().getDescription());
             }
@@ -72,7 +72,7 @@ public class CommandParser {
         }
     }
 
-    private void createAccount(String line){
+    private void createAccount(String line) {
         String[] split = line.split(SPACE);
         if (split.length != 3){
             this.printUsage();
@@ -86,7 +86,7 @@ public class CommandParser {
         System.out.println(response);
     }
 
-    private void deleteAccount(String line){
+    private void deleteAccount(String line) {
         String[] split = line.split(SPACE);
         if (split.length != 3){
             this.printUsage();
@@ -100,7 +100,7 @@ public class CommandParser {
         System.out.println(response);
     }
 
-    private void balance(String line){
+    private void balance(String line) {
         String[] split = line.split(SPACE);
         if (split.length != 3){
             this.printUsage();
@@ -114,7 +114,7 @@ public class CommandParser {
         System.out.println(response);
     }
 
-    private void transferTo(String line){
+    private void transferTo(String line) {
         String[] split = line.split(SPACE);
         if (split.length != 5){
             this.printUsage();

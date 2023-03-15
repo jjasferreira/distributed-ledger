@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.adminclient;
 
+import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.adminclient.grpc.AdminService;
 
 import java.util.Scanner;
@@ -28,42 +29,49 @@ public class CommandParser {
             String line = scanner.nextLine().trim();
             String cmd = line.split(SPACE)[0];
 
-            switch (cmd) {
-                case ACTIVATE:
-                    this.activate(line);
-                    break;
+            try {
+                switch (cmd) {
+                    case ACTIVATE:
+                        this.activate(line);
+                        break;
 
-                case DEACTIVATE:
-                    this.deactivate(line);
-                    break;
+                    case DEACTIVATE:
+                        this.deactivate(line);
+                        break;
 
-                case GET_LEDGER_STATE:
-                    this.dump(line);
-                    break;
+                    case GET_LEDGER_STATE:
+                        this.dump(line);
+                        break;
 
-                case GOSSIP:
-                    this.gossip(line);
-                    break;
+                    case GOSSIP:
+                        this.gossip(line);
+                        break;
 
-                case HELP:
-                    this.printUsage();
-                    break;
+                    case HELP:
+                        this.printUsage();
+                        break;
 
-                case EXIT:
-                    adminService.shutdownNow();
-                    exit = true;
-                    break;
+                    case EXIT:
+                        adminService.shutdownNow();
+                        exit = true;
+                        break;
 
-                default:
-                    break;
+                    default:
+                        System.err.println("Invalid command");
+                        break;
+                }
             }
-
+            catch (StatusRuntimeException e) {
+                System.err.println("Caught exception with description: " + e.getStatus().getDescription());
+            }
+            catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 
     private void activate(String line){
         String[] split = line.split(SPACE);
-
         if (split.length != 2){
             this.printUsage();
             return;
@@ -77,7 +85,6 @@ public class CommandParser {
 
     private void deactivate(String line){
         String[] split = line.split(SPACE);
-
         if (split.length != 2){
             this.printUsage();
             return;
@@ -91,7 +98,6 @@ public class CommandParser {
 
     private void dump(String line){
         String[] split = line.split(SPACE);
-
         if (split.length != 2){
             this.printUsage();
             return;
@@ -105,8 +111,9 @@ public class CommandParser {
 
     private void gossip(String line){
         //TODO: next phases
-        System.out.println("TODO: implement gossip command (only for Phase-3)");
+        System.out.println("TODO: implement gossip command (only for phase 3)");
     }
+
     private void printUsage() {
         System.out.println("Usage:\n" +
                 "- activate <server>\n" +

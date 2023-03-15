@@ -1,0 +1,16 @@
+syntax = "proto3";
+package pt.ulisboa.tecnico.distledger.contract.namingserver;
+
+message RegisterRequest {
+  string serverName = 1; // name of the service offered by the server
+  string serverRole = 2; // role of the server (e.g. "primary", "backup", "replica")
+  string serverAddress = 3; // address of the server
+}
+
+message RegisterResponse {
+}
+//TODO: Exception must have the message: "Not possible to register the server"
+
+service DistLedgerCrossServerService {
+  rpc register(RegisterRequest) returns (RegisterResponse);
+}

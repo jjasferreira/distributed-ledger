@@ -11,20 +11,16 @@ import java.io.IOException;
 
 public class ServerMain {
 
-	private static final String DEBUG_FLAG = "-debug";
+	private static final boolean debug = (System.getProperty("debug") != null);
     public static void main(String[] args) {
 
         System.out.println(ServerMain.class.getSimpleName());
 
-		boolean debug = false;
 
         // Receive and print arguments
 		System.out.printf("Received %d arguments%n", args.length);
 		for (int i = 0; i < args.length; i++) {
 			System.out.printf("arg[%d] = %s%n", i, args[i]);
-			if (args[i].equals(DEBUG_FLAG)) {
-				debug = true;
-			}
 		}
 
 		// Check arguments
