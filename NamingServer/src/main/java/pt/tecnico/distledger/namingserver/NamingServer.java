@@ -8,7 +8,7 @@ public class NamingServer {
         
         private static final Integer HOST_PORT = 5001;
 
-        //TODO: The naming server listens for connections on port 5001
+        // TODO: The naming server listens for connections on port 5001
 
         public static void main(String[] args) {
             System.out.println(ServerMain.class.getSimpleName());
@@ -32,11 +32,24 @@ public class NamingServer {
                 }
             }
 
+            NamingServerState namingServerState = new NamingServerState(debug);
+            final BindableService namingServerImpl = new NamingServerImpl(namingServerState);
 
+            try {
+                server.start();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // Server threads are running in the background.
+            System.out.println("Server started");
+
+            // Do not exit the main thread. Wait until server is terminated.
+            try {
+                server.awaitTermination();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-
-
-
     }
-
 }

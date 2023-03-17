@@ -11,6 +11,16 @@ message RegisterResponse {
 }
 //TODO: Exception must have the message: "Not possible to register the server"
 
+
+message LookupRequest {
+  string serviceName = 1; // name of the service offered by the server
+  string serverRole = 2; // role of the server (e.g. "primary", "backup", "replica")
+}
+
+message LookupResponse {
+  repeated string serverAddress = 1; // address of the server TODO: should we send address or something else?
+}
+
 service DistLedgerCrossServerService {
   rpc register(RegisterRequest) returns (RegisterResponse);
 }

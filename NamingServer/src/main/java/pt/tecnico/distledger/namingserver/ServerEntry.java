@@ -29,4 +29,12 @@ public class ServerEntry {
         this.address = address;
     }
 
+    public void getAddressHost(){
+        return address.split(":")[0];
+    }
+
+    public void getAddressPort(){
+        return address.split(":")[1];
+    }
+
 }
