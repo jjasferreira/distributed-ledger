@@ -14,8 +14,9 @@ public class ServerMain {
 	private static final boolean debug = (System.getProperty("debug") != null);
     public static void main(String[] args) {
 
-        System.out.println(ServerMain.class.getSimpleName());
+		// TODO: receive server role (primary or secondary) as command line input
 
+        System.out.println(ServerMain.class.getSimpleName());
 
         // Receive and print arguments
 		System.out.printf("Received %d arguments%n", args.length);
@@ -29,6 +30,8 @@ public class ServerMain {
 			System.err.printf("Usage: java %s port%n", ServerMain.class.getName());
 			return;
 		}
+
+		// TODO: register server in the naming server
 
 		// Instantiate a new server state and service implementations
 		ServerState state = new ServerState(debug);

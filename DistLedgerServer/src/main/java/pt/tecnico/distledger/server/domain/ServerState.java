@@ -17,6 +17,8 @@ public class ServerState {
 
     private Boolean active;
 
+    private Boolean isPrimary;
+
     private final boolean debug;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
