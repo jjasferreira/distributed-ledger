@@ -1,4 +1,4 @@
-package pt.tecnico.distledger.namingserver;
+package pt.tecnico.distledger.namingserver.domain;
 
 public class ServerEntry {
 
@@ -6,7 +6,7 @@ public class ServerEntry {
 
     private String address;
 
-    public ServerEntry(String name, String role, String address) {
+    public ServerEntry(String role, String address) {
         this.role = role;
         this.address = address;
     }
@@ -27,14 +27,6 @@ public class ServerEntry {
 
     public void setAddress(String address) {
         this.address = address;
-    }
-
-    public void getAddressHost(){
-        return address.split(":")[0];
-    }
-
-    public void getAddressPort(){
-        return address.split(":")[1];
     }
 
 }

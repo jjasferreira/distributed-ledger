@@ -8,48 +8,52 @@ public class NamingServer {
         
         private static final Integer HOST_PORT = 5001;
 
+        boolean debug = false;
+
         // TODO: The naming server listens for connections on port 5001
 
-        public static void main(String[] args) {
-            System.out.println(ServerMain.class.getSimpleName());
+        System.out.println(ServerMain.class.getSimpleName());
 
-            boolean debug = false;
+        // Receive and print arguments
+        System.out.printf("Received %d arguments%n", args.length);
+        for (int i = 0; i < args.length; i++) {
+            System.out.printf("arg[%d] = %s%n", i, args[i]);
+        }
 
-            // Receive and print arguments
-            System.out.printf("Received %d arguments%n", args.length);
-            for (int i = 0; i < args.length; i++) {
-                System.out.printf("arg[%d] = %s%n", i, args[i]);
+        // Check arguments
+        if (args.length > 0) {
+            if (args.length == 1 && args[0].equals(DEBUG_FLAG)) {
+                debug = true;
+            } else {
+                System.err.println("Too many arguments!");
+                System.err.printf("Usage:java %s", ServerMain.class.getName());
+                return;
             }
+        }
 
-            // Check arguments
-            if (args.length > 0) {
-                if (args.length == 1 && args[0].equals(DEBUG_FLAG)) {
-                    debug = true;
-                } else {
-                    System.err.println("Too many arguments!");
-                    System.err.printf("Usage:java %s", ServerMain.class.getName());
-                    return;
-                }
-            }
+        // Instantiate a new server state and service implementations
+        NamingServerState state = new NamingServerState(debug);
+        final int port = Integer.parseInt(args[0]);
+        final BindableService namingServerImpl = new NamingServerImpl(state);
 
-            NamingServerState namingServerState = new NamingServerState(debug);
-            final BindableService namingServerImpl = new NamingServerImpl(namingServerState);
+        // Create a new server to listen on port
+        Server server = ServerBuilder.forPort(port).addService(namingServerImpl).build();
 
-            try {
-                server.start();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        // Start the server TODO reconsider exception handling
+        try {
+            server.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-            // Server threads are running in the background.
-            System.out.println("Server started");
+        // Server threads are running in the background.
+        System.out.println("Server started");
 
-            // Do not exit the main thread. Wait until server is terminated.
-            try {
-                server.awaitTermination();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        // Do not exit the main thread. Wait until server is terminated.
+        try {
+            server.awaitTermination();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }

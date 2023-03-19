@@ -1,4 +1,4 @@
-package pt.tecnico.distledger.namingserver;
+package pt.tecnico.distledger.namingserver.domain;
 
 import pt.tecnico.distledger.namingserver.ServerEntry;
 
@@ -9,10 +9,11 @@ public class ServiceEntry {
 
     private String name;
 
-    private List<ServerEntry> servers = new ArrayList<ServerEntry>();
+    private List<ServerEntry> servers;
 
     public ServiceEntry(String name) {
         this.name = name;
+        this.servers = new ArrayList<>();
     }
 
     public String getName() {
