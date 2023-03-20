@@ -1,10 +1,10 @@
 package pt.tecnico.distledger.namingserver;
 
 import pt.tecnico.distledger.namingserver.*;
+import pt.tecnico.distledger.grpc.*;
 
 import io.grpc.stub.StreamObserver;
 
-import pt.tecnico.distledger.grpc.*;
 
 public class UserAdminServiceImpl extends UserAdminServiceGrpc.UserAdminServiceImplBase {
 
@@ -14,23 +14,20 @@ public class UserAdminServiceImpl extends UserAdminServiceGrpc.UserAdminServiceI
         this.state = state;
     }
 
-
     @Override
-    public void lookup (LookupRequest request, StreamObserver<LookupResponse> responseObserver) {
-        String serviceName = request.getServiceName();
-        String serviceRole = request.getServerRole();
-
-        LookupResponse.Builder lookupResponseBuilder = LookupResponse.newBuilder();
-
-        ServiceEntry serviceEntry = state.getService(serviceName);
-        if (serviceEntry != null) {
-            List<ServerEntry> serverEntryList = serviceEntry.getServers();
-            if (!serverEntryList.isEmpty()) {
-                for (ServerEntry entry: serverEntryList)
-                    lookupResponseBuilder.addServerAddress(entry.getAddress())
-            }
+    public void lookup(LookupRequest request, StreamObserver<LookupResponse> responseObserver) {
+        String name = request.getServiceName();
+        String role = request.getServerRole();
+        try {
+            state.lookup(name, role);
+            LookupResponse response = LookupResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            // TODO: are there no custom exceptions to be caugth?
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
+            e.printStackTrace();
         }
-        LookupResponse lookupResponse = lookupResponseBuilder.build();
-        responseObserver.onNext()lookupResponse;feresponseObserver.onCompleted();
-
     }
+
+}

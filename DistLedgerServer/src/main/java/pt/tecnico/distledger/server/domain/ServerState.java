@@ -71,6 +71,7 @@ public class ServerState {
         debug("> Getting ledger state...");
         debug("OK");
         // All blocks that modify the ledger must have access to accounts
+        // TODO: return copy of ledger
         synchronized (accounts) {
             return ledger;
         }

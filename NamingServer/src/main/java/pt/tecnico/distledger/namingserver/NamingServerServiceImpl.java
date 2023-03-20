@@ -1,12 +1,12 @@
 package pt.tecnico.distledger.namingserver;
 
 import pt.tecnico.distledger.namingserver.*;
+import pt.tecnico.distledger.grpc.*;
 
 import io.grpc.stub.StreamObserver;
 
-import pt.tecnico.distledger.grpc.*;
 
-public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImplBase {
+public class NamingServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImplBase {
 
     private final NamingServerState state;
 
@@ -26,7 +26,9 @@ public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImpl
             responseObserver.onCompleted();
         } catch (Exception e) {
             if (e.getMessage().equals("ADDRESS_ALREADY_REGISTERED")) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Account does not exist").asRuntimeException());
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("This address is already registered for this service").asRuntimeException());
+            } else if (e.getMessage().equals("ROLE_ALREADY_REGISTERED")) {
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("This role is already registered for this service").asRuntimeException());
             } else {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
                 e.printStackTrace();
@@ -36,19 +38,23 @@ public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImpl
 
     @Override
     public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
-        // get attributes from request
-
-        String serviceName = request.getServiceName();
-        String serverAddress = request.getAddress();
-
+        String name = request.getServiceName();
+        String address = request.getAddress();
         try {
-            state.removeServer(serviceName, serverAddress);
+            state.removeServer(name, address);
             DeleteResponse response = DeleteResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
-            e.printStackTrace();
+            if (e.getMessage().equals("SERVICE_DOES_NOT_EXIST")) {
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("The service does not exist").asRuntimeException());
+            } else if (e.getMessage().equals("ADDRESS_DOES_NOT_EXIST")) {
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("The address does not exist for this service").asRuntimeException());
+            } else {
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
+                e.printStackTrace();
+            }
         }
     }
+
 }

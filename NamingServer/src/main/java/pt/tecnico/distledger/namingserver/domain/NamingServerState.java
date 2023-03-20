@@ -24,28 +24,26 @@ public class NamingServerState {
     public void register(String name, String role, String address) throws NamingServerStateException {
         debug("> Registering server " + address + " with role " + role " to the service " + name + "...");
         synchronized (services) {
-            // TODO: Put as least code as possible inside the synchronized block
-        }
-
-        ServiceEntry service = services.get(name);
-        // If the service exists, check if the role or address is already registered
-        if (service != null) {
-            for (ServerEntry server : service.getServers()) {
-                if (server.getAddress().equals(address)) {
-                    debug("NOK: address " + address + " already registered for service " + name);
-                    throw new NamingServerStateException("ADDRESS_ALREADY_REGISTERED");
+            ServiceEntry service = services.get(name);
+            // If the service exists, check if the role or address is already registered
+            if (service != null) {
+                for (ServerEntry server : service.getServers()) {
+                    if (server.getAddress().equals(address)) {
+                        debug("NOK: address " + address + " already registered for service " + name);
+                        throw new NamingServerStateException("ADDRESS_ALREADY_REGISTERED");
+                    }
+                    if (server.getRole().equals(role)) {
+                        debug("NOK: role " + role + " already registered for service " + name);
+                        throw new NamingServerStateException("ROLE_ALREADY_REGISTERED");
+                    }
                 }
-                if (server.getRole().equals(role)) {
-                    debug("NOK: role " + role + " already registered for service " + name);
-                    throw new NamingServerStateException("ROLE_ALREADY_REGISTERED");
-                }
+            } else { // If the service does not exist, create it
+                service = new ServiceEntry(name);
+                services.put(name, service);
             }
-        } else { // If the service does not exist, create it
-            service = new ServiceEntry(name);
-            services.put(name, service);
+            ServerEntry server = new ServerEntry(role, address);
+            service.addServer(server);
         }
-        ServerEntry server = new ServerEntry(role, address);
-        service.addServer(server);
         debug("OK");
     }
 
@@ -55,16 +53,15 @@ public class NamingServerState {
         List<ServerEntry> servers = new ArrayList<>();
         synchronized (services) {
             ServiceEntry service = services.get(name);
-        }
-        // TODO: are we not supposed to throw exceptions in this specific function, according to lab 5?
-        // TODO: caso em que devolvemos a lista completa quando o role é null
-        if (service != null) {
-            for (ServerEntry server : service.getServers()) {
-                if (server.getRole().equals(role)) {
-                    servers.add(server);
+            if (service != null) {
+                for (ServerEntry server : service.getServers()) {
+                    if (server.getRole().equals(role)) {
+                        servers.add(server);
+                    }
                 }
             }
         }
+        // TODO: caso em que devolvemos a lista completa quando o role é null/new line (ver qual dos 2 é que é)
         debug("OK");
         return servers;
     }
@@ -73,21 +70,19 @@ public class NamingServerState {
     public void delete(String name, String address) throws NamingServerStateException {
         debug("> Deleting server " + address + " from the service " + name + "...");
         synchronized (services) {
-            // TODO: Put as least code as possible inside the synchronized block
-        }
-
-        ServiceEntry service = services.get(name);
-        if (service == null) {
-            debug("NOK: service " + name + " does not exist");
-            throw new NamingServerStateException("SERVICE_DOES_NOT_EXIST");
-        }
-        for (ServerEntry server : service.getServers()) {
-            if (server.getAddress().equals(address)) {
-                service.removeServer(address);
-                if (service.getServers().isEmpty())
-                    services.remove(name);
-                debug("OK");
-                return;
+            ServiceEntry service = services.get(name);
+            if (service == null) {
+                debug("NOK: service " + name + " does not exist");
+                throw new NamingServerStateException("SERVICE_DOES_NOT_EXIST");
+            }
+            for (ServerEntry server : service.getServers()) {
+                if (server.getAddress().equals(address)) {
+                    service.removeServer(address);
+                    if (service.getServers().isEmpty())
+                        services.remove(name);
+                    debug("OK");
+                    return;
+                }
             }
         }
         debug("NOK: address " + address + " does not exist for service " + name);
