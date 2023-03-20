@@ -4,11 +4,7 @@ public class NamingServer {
 
     public static void main(String[] args) {
 
-        private static final String DEBUG_FLAG = "-debug";
-        
-        private static final Integer HOST_PORT = 5001;
-
-        boolean debug = false;
+        private static final boolean debug = (System.getProperty("debug") != null);
 
         // TODO: The naming server listens for connections on port 5001
 
@@ -22,13 +18,9 @@ public class NamingServer {
 
         // Check arguments
         if (args.length > 0) {
-            if (args.length == 1 && args[0].equals(DEBUG_FLAG)) {
-                debug = true;
-            } else {
-                System.err.println("Too many arguments!");
-                System.err.printf("Usage:java %s", ServerMain.class.getName());
-                return;
-            }
+            System.err.println("Too many arguments!");
+            System.err.printf("Usage: java %s", NamingServer.class.getName());
+            return;
         }
 
         // Instantiate a new server state and service implementations
@@ -47,7 +39,7 @@ public class NamingServer {
         }
 
         // Server threads are running in the background.
-        System.out.println("Server started");
+        System.out.println("Naming Server started");
 
         // Do not exit the main thread. Wait until server is terminated.
         try {

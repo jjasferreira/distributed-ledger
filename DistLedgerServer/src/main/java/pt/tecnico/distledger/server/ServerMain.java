@@ -52,6 +52,10 @@ public class ServerMain {
 		// Server threads are running in the background.
 		System.out.println("Server started");
 
+		// TODO: register server in the naming server
+
+
+
 		// Do not exit the main thread. Wait until server is terminated.
 		try {
 			server.awaitTermination();

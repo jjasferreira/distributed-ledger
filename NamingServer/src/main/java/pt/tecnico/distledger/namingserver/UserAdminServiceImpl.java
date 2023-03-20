@@ -10,11 +10,8 @@ public class UserAdminServiceImpl extends UserAdminServiceGrpc.UserAdminServiceI
 
     private final NamingServerState state;
 
-    private boolean debug = false;
-
-    public NamingServerServiceImpl(NamingServerState state, boolean debug) {
+    public NamingServerServiceImpl(NamingServerState state) {
         this.state = state;
-        this.debug = debug;
     }
 
 

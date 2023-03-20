@@ -49,6 +49,26 @@ public class NamingServerState {
         debug("OK");
     }
 
+    // lookup: Returns a list containing servers of a specific service and role.
+    public List<ServerEntry> lookup(String name, String role) throws NamingServerStateException {
+        debug("> Looking up server with role " + role + " in the service " + name + "...");
+        List<ServerEntry> servers = new ArrayList<>();
+        synchronized (services) {
+            ServiceEntry service = services.get(name);
+        }
+        // TODO: are we not supposed to throw exceptions in this specific function, according to lab 5?
+        // TODO: caso em que devolvemos a lista completa quando o role é null
+        if (service != null) {
+            for (ServerEntry server : service.getServers()) {
+                if (server.getRole().equals(role)) {
+                    servers.add(server);
+                }
+            }
+        }
+        debug("OK");
+        return servers;
+    }
+
     // delete: Deletes a server from a service of the naming server list of services.
     public void delete(String name, String address) throws NamingServerStateException {
         debug("> Deleting server " + address + " from the service " + name + "...");
@@ -64,6 +84,8 @@ public class NamingServerState {
         for (ServerEntry server : service.getServers()) {
             if (server.getAddress().equals(address)) {
                 service.removeServer(address);
+                if (service.getServers().isEmpty())
+                    services.remove(name);
                 debug("OK");
                 return;
             }

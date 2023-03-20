@@ -10,11 +10,8 @@ public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImpl
 
     private final NamingServerState state;
 
-    private boolean debug = false;
-
-    public ServerServiceImpl(NamingServerState state, boolean debug) {
+    public ServerServiceImpl(NamingServerState state) {
         this.state = state;
-        this.debug = debug;
     }
 
     @Override
@@ -27,8 +24,7 @@ public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImpl
             RegisterResponse response = RegisterResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (e.getMessage().equals("ADDRESS_ALREADY_REGISTERED")) {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Account does not exist").asRuntimeException());
             } else {
@@ -36,12 +32,6 @@ public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImpl
                 e.printStackTrace();
             }
         }
-
-        }
-        // TODO: synchronize this
-        // TODO: if (debug) {
-        //    System.err.println("Registering server " + name + " with role " + role + " and address " + address);
-        //}
     }
 
     @Override
@@ -61,3 +51,4 @@ public class ServerServiceImpl extends NamingServerServiceGrpc.ServerServiceImpl
             e.printStackTrace();
         }
     }
+}

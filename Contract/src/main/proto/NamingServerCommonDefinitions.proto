@@ -12,5 +12,5 @@ message LookupResponse {
 }
 
 service DistLedgerCrossServerService {
-  rpc register(LookupRequest) returns (LookupResponse);
+  rpc lookup(LookupRequest) returns (LookupResponse);
 }

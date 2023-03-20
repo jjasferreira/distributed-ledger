@@ -11,22 +11,12 @@ public class ServerEntry {
         this.address = address;
     }
 
-    //TODO: Do we need setters here?
-
     public String getRole() {
         return role;
     }
 
     public String getAddress() {
         return address;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
     }
 
 }
