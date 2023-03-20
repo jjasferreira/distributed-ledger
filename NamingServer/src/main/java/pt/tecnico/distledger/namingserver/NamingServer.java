@@ -1,14 +1,23 @@
 package pt.tecnico.distledger.namingserver;
 
+import pt.tecnico.distledger.namingserver.domain.*;
+
+import io.grpc.BindableService;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
+
+// Exceptions
+import java.io.IOException;
+
 public class NamingServer {
+
+    private static final boolean debug = (System.getProperty("debug") != null);
 
     public static void main(String[] args) {
 
-        private static final boolean debug = (System.getProperty("debug") != null);
-
         // TODO: The naming server listens for connections on port 5001
 
-        System.out.println(ServerMain.class.getSimpleName());
+        System.out.println(NamingServer.class.getSimpleName());
 
         // Receive and print arguments
         System.out.printf("Received %d arguments%n", args.length);
@@ -17,7 +26,7 @@ public class NamingServer {
         }
 
         // Check arguments
-        if (args.length > 0) {
+        if (args.length > 1) {
             System.err.println("Too many arguments!");
             System.err.printf("Usage: java %s", NamingServer.class.getName());
             return;
@@ -26,7 +35,7 @@ public class NamingServer {
         // Instantiate a new server state and service implementations
         NamingServerState state = new NamingServerState(debug);
         final int port = Integer.parseInt(args[0]);
-        final BindableService namingServerImpl = new NamingServerImpl(state);
+        final BindableService namingServerImpl = new NamingServerServiceImpl(state);
 
         // Create a new server to listen on port
         Server server = ServerBuilder.forPort(port).addService(namingServerImpl).build();

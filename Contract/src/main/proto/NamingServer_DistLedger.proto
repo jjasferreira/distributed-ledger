@@ -3,8 +3,8 @@ package pt.ulisboa.tecnico.distledger.contract.namingserver;
 
 message RegisterRequest {
   string serviceName = 1; // name of the service offered by the server (e.g. DistLedger)
-  string serverRole = 2; // role of the server (e.g. "primary", "backup", "replica")
-  string serverAddress = 3; // address of the server (e.g. "localhost:8000")
+  string role = 2; // role of the server (e.g. "primary", "backup", "replica")
+  string address = 3; // address of the server (e.g. "localhost:8000")
 }
 
 message RegisterResponse {
@@ -20,13 +20,27 @@ message DeleteResponse {
   //TODO: Exception must have the message: "Not possible to remove the server"
 }
 
-message LookupRequest {
-  string serviceName = 1; // name of the service offered by the server (e.g. DistLedger)
-  string serverRole = 2; // role of the server (e.g. "primary", "backup", "replica")
+message Server {
+  string serviceName = 1;
+  string role = 2;
+  string address = 3;
 }
 
+message ServerList {
+  repeated Server server = 1;
+}
+
+message LookupRequest {
+  string serviceName = 1; // name of the service offered by the server (e.g. DistLedger)
+  string role = 2; // role of the server (e.g. "primary", "backup", "replica")
+}
+
+// message LookupResponse {
+//   repeated string serverAddress = 1; // addresses of the servers
+// }
+
 message LookupResponse {
-  repeated string serverAddress = 1; // addresses of the servers
+  ServerList serverList = 1; // list of servers
 }
 
 service NamingServerService {
