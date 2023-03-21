@@ -1,9 +1,11 @@
 package pt.tecnico.distledger.adminclient;
 
-import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.adminclient.grpc.AdminService;
 
+import io.grpc.StatusRuntimeException;
+
 import java.util.Scanner;
+
 
 public class CommandParser {
 
@@ -63,8 +65,7 @@ public class CommandParser {
             }
             catch (StatusRuntimeException e) {
                 System.err.println("Caught exception with description: " + e.getStatus().getDescription());
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 System.err.println(e.getMessage());
             }
         }

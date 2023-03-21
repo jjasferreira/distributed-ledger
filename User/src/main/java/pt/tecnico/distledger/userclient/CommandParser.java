@@ -1,9 +1,11 @@
 package pt.tecnico.distledger.userclient;
 
+import pt.tecnico.distledger.userclient.grpc.*;
+
 import io.grpc.StatusRuntimeException;
-import pt.tecnico.distledger.userclient.grpc.UserService;
 
 import java.util.Scanner;
+
 
 public class CommandParser {
 
@@ -15,10 +17,25 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
-    private final UserService userService;
+    private UserService primaryUserService = null;
+    private UserService secondaryUserService = null;
+    private final NamingServerService namingServerService;
 
-    public CommandParser(UserService userService) {
-        this.userService = userService;
+    public CommandParser(NamingServerService namingServerService) {
+        this.namingServerService = namingServerService;
+        List<ServerEntry> servers = namingServerService.lookup();
+        for (ServerEntry entry : servers) {
+            if (primaryUserService == null && entry.getRole == "A") {
+                String[] hostPort = entry.getAddress.split(":");
+                primaryUserService = new UserService(hostPort[0], hostPort[1]);
+            }
+            if (secondaryUserService == null && entry.getRole == "B") {
+                String[] hostPort = entry.getAddress.split(":");
+                secondaryUserService = new UserService(hostPort[0], hostPort[1]);
+            }
+
+        }
+        this.primaryUserService
     }
 
     void parseInput() {
@@ -65,8 +82,7 @@ public class CommandParser {
             }
             catch (StatusRuntimeException e) {
                 System.err.println("Caught exception with description: " + e.getStatus().getDescription());
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 System.err.println(e.getMessage());
             }
         }
@@ -78,10 +94,19 @@ public class CommandParser {
             this.printUsage();
             return;
         }
-        String server = split[1];
+        String role = split[1];
         String username = split[2];
 
-        String response = userService.createAccount(server, username);
+        // CASO 1 TODO: if this wins: userServices.get(role).createAccount(username); {"A":primaryUserService; "B":secondaryUserService}
+        String response;
+        if (role == A)
+            response = primaryUserService.createAccount;
+        else if (role == B)
+            response = secondaryUserService.createAccount;
+        else
+            System.err.println("Invalid role");
+        // CASO 2
+        String response = userService.createAccount(role, username);
         System.out.println("OK");
         System.out.println(response);
     }

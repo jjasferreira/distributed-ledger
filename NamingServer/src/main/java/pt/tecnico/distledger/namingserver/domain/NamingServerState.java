@@ -52,19 +52,25 @@ public class NamingServerState {
 
     // lookup: Returns a list containing servers of a specific service and role.
     public List<ServerEntry> lookup(String name, String role) throws NamingServerStateException {
-        debug("> Looking up server with role " + role + " in the service " + name + "...");
+        if (role != null)
+            debug("> Looking up server with role " + role + " in the service " + name + "...");
+        else
+            debug("> Looking up all servers in the service " + name + "...");
         List<ServerEntry> servers = new ArrayList<>();
+        // TODO ask teacher about using read/writeLock vs synchronized on the naming server
         synchronized (services) {
             ServiceEntry service = services.get(name);
             if (service != null) {
                 for (ServerEntry server : service.getServers()) {
-                    if (server.getRole().equals(role)) {
+                    if (role == null) {
                         servers.add(server);
+                        continue;
                     }
+                    if (server.getRole().equals(role))
+                        servers.add(server);
                 }
             }
         }
-        // TODO: caso em que devolvemos a lista completa quando o role é null/new line (ver qual dos 2 é que é)
         debug("OK");
         return servers;
     }

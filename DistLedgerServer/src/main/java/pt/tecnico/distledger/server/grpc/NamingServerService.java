@@ -14,26 +14,28 @@ public class NamingServerService {
 
     public NamingServerService(String host, int port) {
         final String target = host + ":" + port;
-
 		channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-
         stub = NamingServerServiceGrpc.newBlockingStub(channel);
     }
 
-    public String register(String serviceName, String role, String address) {
-        RegisterRequest request = RegisterRequest.newBuilder().setServiceName(serviceName).setRole(role).setAddress(address).build();
+    public String register(String name, String role, String address) {
+        RegisterRequest request = RegisterRequest.newBuilder().setServiceName(name).setRole(role).setAddress(address).build();
         RegisterResponse response = stub.register(request);
         return response.toString();
     }
 
-    public String lookup(String serviceName, String role) {
-        LookupRequest request = LookupRequest.newBuilder().setServiceName(serviceName).setRole(role).build();
+    public HashMap<String, String> lookup(String name, String role) {
+        LookupRequest request = LookupRequest.newBuilder().setServiceName(name).setRole(role).build();
         LookupResponse response = stub.lookup(request);
-        return response.toString();
+        HashMap<String, String> servers = new HashMap<>();
+        for (Server server : response.getServersList()) {
+            servers.put(server.getAddress(), server.getRole());
+        }
+        return servers;
     }
     
-    public String delete(String serviceName, String address) {
-        DeleteRequest request = DeleteRequest.newBuilder().setServiceName(serviceName).setAddress(address).build();
+    public String delete(String name, String address) {
+        DeleteRequest request = DeleteRequest.newBuilder().setServiceName(name).setAddress(address).build();
         DeleteResponse response = stub.delete(request);
         return response.toString();
     }

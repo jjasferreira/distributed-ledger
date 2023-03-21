@@ -61,6 +61,9 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
         String username = request.getUserId();
         try {
+            if (!state.isPrimary()) {
+                reponseObserver.onError(INVALID_ARGUMENT.withDescription("Cannot perform write operation on a secondary server").asRuntimeException())
+            }
             state.deleteAccount(username);
             DeleteAccountResponse response = DeleteAccountResponse.newBuilder().build();
             responseObserver.onNext(response);

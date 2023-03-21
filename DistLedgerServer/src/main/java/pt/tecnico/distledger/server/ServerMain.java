@@ -1,20 +1,25 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.grpc.NamingServerService;
 
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-// Exceptions
 import java.io.IOException;
+
 
 public class ServerMain {
 
+	private static final String NAMING_HOST = "localhost";
+	private static final String NAMING_PORT = "5001";
+
+	private static final String SERVICE_NAME = "DistLedger";
+	private static final String SERVER_HOST = "localhost";
+
 	private static final boolean debug = (System.getProperty("debug") != null);
     public static void main(String[] args) {
-
-		// TODO: receive server role (primary or secondary) as command line input
 
         System.out.println(ServerMain.class.getSimpleName());
 
@@ -31,36 +36,49 @@ public class ServerMain {
 			return;
 		}
 
-		// TODO: register server in the naming server
-
 		// Instantiate a new server state and service implementations
-		ServerState state = new ServerState(debug);
 		final int port = Integer.parseInt(args[0]);
+		final String role = args[1];
+
+		if (port < 1024 || port > 65353) {
+			System.err.println("Port number must be between 1024 and 65563");
+			return;
+		}
+
+		if (!role.equals("A") && !role.equals("B")) {
+			System.err.println("Role must be either A or B");
+			return;
+		}
+
+		final String address = SERVER_HOST + ":" + port;
+
+		final NamingServerService namingServerService = new NamingServerService(NAMING_HOST, NAMING_PORT);
+
+		ServerState state = new ServerState(debug, namingServerService, role, SERVICE_NAME);
+
 		final BindableService userImpl = new UserServiceImpl(state);
 		final BindableService adminImpl = new AdminServiceImpl(state);
 
-		// Create a new server to listen on port
+		// Create a new server to listen on port and start it
 		Server server = ServerBuilder.forPort(port).addService(userImpl).addService(adminImpl).build();
-
-		// Start the server TODO reconsider exception handling
 		try {
 			server.start();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		// Server threads are running in the background.
 		System.out.println("Server started");
 
-		// TODO: register server in the naming server
-
-
+		// Register server to known naming server
+		state.registerToNamingServer(SERVICE_NAME, role, address);
 
 		// Do not exit the main thread. Wait until server is terminated.
 		try {
 			server.awaitTermination();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
+		} finally {
+			// Delete server from known naming server
+			state.deleteFromNamingServer(SERVICE_NAME, address);
 		}
 
     }
