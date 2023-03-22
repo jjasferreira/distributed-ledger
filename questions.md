@@ -4,22 +4,26 @@
 - ativação e desativação de servers liga/desliga do naming server? catch sinal de paragem de execução e remover do namingserver
 
 ## Dúvidas para colocar ao nosso prof:
-- Mapa de ServiceEntry com keys a serem o nome, mas a própria ServiceEntry tem um nome
-- Qualificador (ex: "A" ou "B", como está no enunciado). Nome Role está bem?
-- Um address:porto pode aparecer repetido para o mesmo serviço? E o qualificador? NÃO
-- Como é que os clientes consultam o naming server? Ao ser executados? E procuram servidor primário ou secundário?
-- Dúvidas devem ter mesmo o nome "Not possible to remove the server" como está no lab 5 ou pode ser algo mais específico, ocmo temos?
-- O userService contém 2 stubs para cada server ou criamos dois userservice?
-- Se primário estiver off/inactive, o secundário responde na mesma a pedidos de leitura? E se sim, ao detetar que o primário está off, vai ao secundário?
-- Como é que colocamos o método lookup apenas num sitio em vez de estar nas 3 implementações de serviço? Ou isto não vai ser valorizado? (lookup do User, Admin e DistLedgerServer é semelhante)
-- Como é que vemos se o server em cache do lado do user ainda está ativo? Ping?
-- O localhost:5001 (port do namingserver) deve ser guardado como variável de cada processo ou deve-se ir buscar sempre ao pom.xml?
-- Podemos assumir que o endereço do servidor é localhost ou devemos ir buscá-lo de outra forma?
-- Clonar o ledgerstate antes de propagar ou fazemos rollback em caso de erro? remover ultimo da lista?
-- Como garantir que métodos pda ServerMain funcionam para ambos os roles, mas que pedidos de escrita ao secundário por parte do cliente retornem sempre erro? Verificamos se o servidor é primário no UserServiceImpl, está correto?
+SE ALGUEM FOR ABAIXO, NÃO VAI ACONTECER ESSE VOLTAR A SER EXECUTADO
+TODO: LEDEGR COPY EM VEZ DE MANDAR A REFERENCIA
+todo: catch blablaexception, catch blablablaexception, catch exception
 
+- Broker só pode ser criado uma vez (no server primario)?
+- R: X tempo retries para propagar para o secundário, se ele ainda não estiver executado (usar timeout e extender para os outros métodos)
+- Se primário estiver off/inactive, o secundário responde na mesma a pedidos de leitura? E se sim, ao detetar que o primário está off, vai ao secundário?
+- R: Leitura responde sempre. Não vai ao secundário
+- Podemos assumir que o endereço do servidor é localhost ou devemos ir buscá-lo de outra forma?
+- R: arg da linha de comandos?? prof ainda vai falar com docentes
+- O userService contém 2 stubs para cada server ou criamos dois userservice?
+- R: user faz lookup sempre antes de qualquer operação ou guardar numa estrutura de dados alguns stubs, se der erro, fazer lookup silencioso
+- Como é que vemos se o server em cache do lado do user ainda está ativo? Ping?
+- R: não vale a pena fazer ping, mais vale mandar a ledger e se acontecer erro, lookuop
+- Clonar o ledgerstate antes de propagar ou fazemos rollback em caso de erro? remover ultimo da lista?
+- R: fazer lista com 1 elemento e enviar, fazer rollback em caso de erro
+- O localhost:5001 (port do namingserver) deve ser guardado como variável de cada processo ou deve-se ir buscar sempre ao pom.xml?
+- R: HARD CODED NO CÓDIGO
+- 
 ## TODO:
-- Broker só pode ser criado uma vez (no server primario)
 - Primário propaga operação ao secundário antes de responder ao cliente
 - Se server primário off, pedido de escrita ao primário devolve ERRO
 - Pedidos de escrita ao secundário devolvem sempre ERRO

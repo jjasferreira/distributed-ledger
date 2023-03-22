@@ -69,6 +69,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
+        //todo: catch blablaexception, catch blablablaexception, catch exception
         catch (Exception e) {
             if (e.getMessage().equals("INACTIVE")) {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("UNAVAILABLE").asRuntimeException());
@@ -79,7 +80,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             } else if (e.getMessage().equals("IS_BROKER")) {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Cannot delete broker account").asRuntimeException());
             } else {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
+                responseObserver.onError(UNKNOWN.withDescription("Unknown error").asRuntimeException());
                 e.printStackTrace();
             }
         }
