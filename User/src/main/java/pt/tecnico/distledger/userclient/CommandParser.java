@@ -23,7 +23,6 @@ public class CommandParser {
 
     HashMap<String, UserService> userServices = new HashMap<>();
 
-
     public CommandParser(NamingServerService namingServerService) {
         this.namingServerService = namingServerService;
         /*
@@ -117,39 +116,19 @@ public class CommandParser {
 
     private void createAccount(String line) {
         String[] split = line.split(SPACE);
-        if (split.length != 3){
+        if (split.length != 3) {
             this.printUsage();
             return;
         }
         String role = split[1];
         String username = split[2];
-
-        /*
-        // CASO 1 TODO: if this wins: userServices.get(role).createAccount(username); {"A":primaryUserService; "B":secondaryUserService}
-        */
-
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
                 return;
             }
         }
-
         String response = userServices.get(role).createAccount(username);
-
-        /*
-        UserService userService = userServices.get(role);
-        if (userService == null) {
-            if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                return;
-            }
-        }
-
-
-        String response = userService.createAccount(username);
-         */
-
         System.out.println("OK");
         System.out.println(response);
     }
@@ -162,18 +141,13 @@ public class CommandParser {
         }
         String role = split[1];
         String username = split[2];
-
-        UserService userService = userServices.get(role);
-        if (userService == null) {
-            this.lookup(username, role);
-            if (userServices.get(role) == null) {
+        if (!userServices.containsKey(role)) {
+            if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
                 return;
             }
-            userService = userServices.get(role);
         }
-
-        String response = userService.deleteAccount(username);
+        String response = userServices.get(role).deleteAccount(username);
         System.out.println("OK");
         System.out.println(response);
     }
@@ -184,10 +158,15 @@ public class CommandParser {
             this.printUsage();
             return;
         }
-        String server = split[1];
+        String role = split[1];
         String username = split[2];
-
-        String response = userService.balance(server, username);
+        if (!userServices.containsKey(role)) {
+            if (!this.lookup("DistLedger", role)) {
+                System.err.println("No server available to handle request");
+                return;
+            }
+        }
+        String response = userServices.get(role).balance(username);
         System.out.println("OK");
         System.out.println(response);
     }
@@ -198,12 +177,17 @@ public class CommandParser {
             this.printUsage();
             return;
         }
-        String server = split[1];
+        String role = split[1];
         String from = split[2];
         String dest = split[3];
         Integer amount = Integer.valueOf(split[4]);
-
-        String response = userService.transferTo(server, from, dest, amount);
+        if (!userServices.containsKey(role)) {
+            if (!this.lookup("DistLedger", role)) {
+                System.err.println("No server available to handle request");
+                return;
+            }
+        }
+        String response = userServices.get(role).transferTo(from, dest, amount);
         System.out.println("OK");
         System.out.println(response);
     }

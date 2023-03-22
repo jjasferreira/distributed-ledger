@@ -19,6 +19,7 @@ public class ServerMain {
 	private static final String SERVER_HOST = "localhost";
 
 	private static final boolean debug = (System.getProperty("debug") != null);
+
     public static void main(String[] args) {
 
         System.out.println(ServerMain.class.getSimpleName());

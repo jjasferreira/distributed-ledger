@@ -42,14 +42,21 @@ mvn -version
 mvn clean install
 ```
 
-2. Then, to generate the code for the client and server stubs:
+2. Then, to generate the code for all stubs:
 
 ```s
 cd Contract
 mvn install
 ```
 
-3. To compile and run the server:
+3. To compile and run the Naming Server:
+
+```s
+cd NamingServer
+mvn compile exec:java [-Dexec.debug=true]"
+```
+
+The `-debug` flag is optional and prints all client and server interactions to the terminal.
 
 ```s
 cd DistLedgerServer

@@ -1,13 +1,14 @@
 package pt.tecnico.distledger.namingserver;
 
 import pt.tecnico.distledger.namingserver.domain.*;
+import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger;
 
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-// Exceptions
 import java.io.IOException;
+
 
 public class NamingServer {
 
