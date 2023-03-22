@@ -2,12 +2,16 @@ package pt.tecnico.distledger.server.domain;
 
 import pt.tecnico.distledger.server.domain.operation.*;
 import pt.tecnico.distledger.server.domain.exception.*;
+import pt.tecnico.distledger.server.grpc.NamingServerService;
+import pt.tecnico.distledger.server.grpc.CrossServerService;
+
+import io.grpc.StatusRuntimeException;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
-
 import java.util.concurrent.locks.*;
+
 
 public class ServerState {
 
@@ -17,34 +21,39 @@ public class ServerState {
 
     private final String serviceName;
 
-    private final boolean debug;
+    private final String role;
 
-    private boolean isPrimary;
+    private final String address;
 
     private boolean active;
 
-    private NamingServerService namingServerService;
+    private final boolean debug;
 
-    private CrossServerDistLedgerService crossServerService;
+    private final NamingServerService namingServerService;
+
+    private CrossServerService crossServerService;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
     private final ReadWriteLock activeLock = new ReentrantReadWriteLock();
 
-    public ServerState(boolean debug, NamingServerService namingServerService, String role, String serviceName) {
+    public ServerState(boolean debug, NamingServerService namingServerService, String serviceName, String role, String address) {
+        this.debug = debug;
+        this.namingServerService = namingServerService;
+        this.serviceName = serviceName;
+        this.role = role;
+        this.address = address;
+        this.active = true;
         this.ledger = new ArrayList<>();
         this.accounts = new HashMap<>();
-        this.debug = debug;
-        this.active = true;
-        this.serviceName = serviceName;
-        this.namingServerService = namingServerService;
-        this.isPrimary = (role.equals("A"));
-        if (isPrimary) this.setCrossServerService();
+        if (role.equals("A"))
+            this.setCrossServerService();
         accounts.put("broker", 1000);
+
     }
 
     public void registerToNamingServer(String name, String role, String address) {
         try {
-            namingServerService.register(SERVICE_NAME, role, address);
+            namingServerService.register(name, role, address);
             System.out.println("Server registered to naming server");
         } catch (StatusRuntimeException e) {
             System.err.println("Caught exception with description: " + e.getStatus().getDescription());
@@ -55,7 +64,7 @@ public class ServerState {
 
     public void deleteFromNamingServer(String name, String address) {
         try {
-            namingServerService.register(SERVICE_NAME, address);
+            namingServerService.delete(name, address);
             System.out.println("Server deleted from naming server");
         } catch (StatusRuntimeException e) {
             System.err.println("Caught exception with description: " + e.getStatus().getDescription());
@@ -65,10 +74,11 @@ public class ServerState {
     }
 
     private void setCrossServerService() {
-        Map<String, String> servers = namingServerService.lookup(serviceName, "B");
-        for (Map.Entry<String, String> entry : servers.entrySet()) {
+        HashMap<String, String> servers = namingServerService.lookup(serviceName, "B");
+        for (HashMap.Entry<String, String> entry : servers.entrySet()) {
             if (entry.getValue().equals("B")) {
-            this.crossServerService = new crossServerService(entry.getKey());
+                this.crossServerService = new CrossServerService(entry.getKey());
+            }
         }
     }
 
@@ -77,36 +87,36 @@ public class ServerState {
             System.err.println("[DEBUG] " + debugMsg);
     }
 
-    public boolean isPrimary() {
-        return isPrimary;
+    public boolean isPrimaryServer() {
+        return role.equals("A");
     }
 
-    public void activate() throws ServerStateException {
+    public void activate() throws AlreadyActiveServerException {
         debug("> Activating server...");
         activeLock.writeLock().lock();
         try {
             if (active) {
                 debug("NOK: server already active");
-                throw new ServerStateException("ALREADY_ACTIVE");
+                throw new AlreadyActiveServerException();
             }
             active = true;
-            state.registerToNamingServer(SERVICE_NAME, role, address);
+            this.registerToNamingServer(this.serviceName, this.role, this.address);
         } finally {
             activeLock.writeLock().unlock();
         }
         debug("OK");
     }
 
-    public void deactivate() throws ServerStateException {
+    public void deactivate() throws AlreadyInactiveServerException {
         debug("> Deactivating server...");
         activeLock.writeLock().lock();
         try {
             if (!active) {
                 debug("NOK: server already inactive");
-                throw new ServerStateException("ALREADY_INACTIVE");
+                throw new AlreadyInactiveServerException();
             }
             active = false;
-            state.deleteFromNamingServer(SERVICE_NAME, address);
+            this.deleteFromNamingServer(this.serviceName, this.address);
         } finally {
             activeLock.writeLock().unlock();
         }
@@ -115,22 +125,19 @@ public class ServerState {
 
     public List<Operation> getLedger() {
         debug("> Getting ledger state...");
-        debug("OK");
-        // All blocks that modify the ledger must have access to accounts
-        // TODO: return copy of ledger
         synchronized (accounts) {
-            return ledger;
+            debug("OK");
+            return new ArrayList<>(ledger);
         }
     }
 
     public void gossip() {
-        // TODO: next phases
+        // TODO: 3rd phase
     }
 
-    public void createAccount(String account) throws ServerStateException {
-        activeLock.readLock().lock();
+    public void createAccount(String account) throws InactiveServerException, AlreadyExistingAccountException {
         debug("> Creating account " + account + "...");
-        if (!isPrimary) {
+        if (!isPrimaryServer()) {
             // We can assume that request is well-formed and that server is active because otherwise the primary server
             // wouldn't have propagated the state
             synchronized(accounts) {
@@ -139,30 +146,27 @@ public class ServerState {
             }
             return;
         }
+        activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
-                throw new ServerStateException("INACTIVE");
+                throw new InactiveServerException(this.role);
             }
             synchronized (accounts) {
                 if (accounts.containsKey(account)) {
                     debug("NOK: " + account + " already exists");
-                    throw new ServerStateException("ALREADY_EXISTS");
+                    throw new AlreadyExistingAccountException(account);
                 }
-                accounts_copy = new HashMap<String, Integer>(accounts);
-                ledger_copy = new ArrayList<Operation>(ledger)
+                accounts.put(account, 0);
+                CreateOp createOp = new CreateOp(account);
+                ledger.add(createOp);
 
-                accounts_copy.put(account, 0);
-                ledger_copy.add(new CreateOp(account));
-
-                //TODO check if cached server is working
-                // if (!crossServerService.ping()) this.setCrossServerService();
-
-                if (crossServerService.propagateState(ledger_copy)) {
-                    this.ledger = ledger_copy;
-                    this.accounts = accounts_copy;
+                if (!crossServerService.propagateState(createOp)) {
+                    // If propagation fails, we need to revert the state
+                    debug("NOK: propagation failed, reverting state...");
+                    ledger.remove(createOp);
+                    accounts.remove(account);
                 }
-
             }
             debug("OK");
         } finally {
@@ -170,9 +174,9 @@ public class ServerState {
         }
     }
 
-    public void deleteAccount(String account) throws ServerStateException {
+    public void deleteAccount(String account) throws InactiveServerException, IsBrokerException, NonExistingAccountException, MoneyInAccountException {
         debug("> Deleting account " + account + "...");
-        if (!isPrimary) {
+        if (!isPrimaryServer()) {
             // We can assume that request is well-formed and that server is active because otherwise the primary server
             // wouldn't have propagated the state
             synchronized(accounts) {
@@ -185,34 +189,31 @@ public class ServerState {
         try {
             if (!active) {
                 debug("NOK: inactive server");
-                throw new ServerStateException("INACTIVE");
+                throw new InactiveServerException(this.role);
             }
             if (account.equals("broker")) {
                 debug("NOK: " + account + " is the broker account");
-                throw new ServerStateException("IS_BROKER");
+                throw new IsBrokerException();
             }
             synchronized (accounts) {
                 if (!accounts.containsKey(account)) {
                     debug("NOK: " + account + " does not exist");
-                    throw new ServerStateException("DOES_NOT_EXIST");
+                    throw new NonExistingAccountException(account);
                 }
-                if (accounts.get(account) > 0) {
+                int balance = accounts.get(account);
+                if (balance > 0) {
                     debug("NOK: " + account + " still has money");
-                    throw new ServerStateException("HAS_MONEY");
+                    throw new MoneyInAccountException(account);
                 }
-                //TODO: these can be shallow copies, right?
-                accounts_copy = new HashMap<String, Integer>(accounts);
-                ledger_copy = new ArrayList<Operation>(ledger)
+                accounts.remove(account);
+                DeleteOp deleteOp = new DeleteOp(account);
+                ledger.add(deleteOp);
 
-                accounts_copy.remove(account);
-                ledger_copy.add(new DeleteOp(account));
-                //TODO check if cached server is working
-                // if (!crossServerService.ping()) this.setCrossServerService();
-
-                if (crossServerService.propagateState(ledger_copy)) {
-                    this.ledger = ledger_copy;
-                    this.accounts = accounts_copy;
-                    //TODO: is there a way to delete the original ledgers?
+                if (!crossServerService.propagateState(deleteOp)) {
+                    // If propagation fails, we need to revert the state
+                    debug("NOK: propagation failed, reverting state...");
+                    ledger.remove(deleteOp);
+                    accounts.put(account, balance);
                 }
             }
         } finally {
@@ -221,19 +222,19 @@ public class ServerState {
         debug("OK");
     }
 
-    public int getBalance(String account) throws ServerStateException {
+    public int getBalance(String account) throws InactiveServerException, NonExistingAccountException {
         debug("> Getting balance of account " + account + "...");
         int balance;
         activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
-                throw new ServerStateException("INACTIVE");
+                throw new InactiveServerException(this.role);
             }
             synchronized (accounts) {
                 if (!accounts.containsKey(account)) {
                     debug("NOK: " + account + " does not exist");
-                    throw new ServerStateException("DOES_NOT_EXIST");
+                    throw new NonExistingAccountException(account);
                 }
                 balance = accounts.get(account);
             }
@@ -244,54 +245,52 @@ public class ServerState {
         return balance;
     }
 
-    public void transferTo(String accountFrom, String accountTo, int amount) throws ServerStateException {
+    public void transferTo(String accountFrom, String accountTo, int amount) throws InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException {
         debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
+        if (!isPrimaryServer()) {
+            accounts.put(accountFrom, accounts.get(accountFrom) - amount);
+            accounts.put(accountTo, accounts.get(accountTo) + amount);
+            ledger.add(new TransferOp(accountFrom, accountTo, amount));
+            return;
+        }
         activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
-                throw new ServerStateException("INACTIVE");
+                throw new InactiveServerException(this.role);
             }
             if (accountFrom.equals(accountTo)) {
                 debug("NOK: " + accountFrom + " and " + accountTo + " are the same account");
-                throw new ServerStateException("SAME_ACCOUNT");
+                throw new SameAccountException(accountFrom);
             }
             if (amount <= 0) {
                 debug("NOK: " + amount + " is not a valid amount");
-                throw new ServerStateException("INVALID_AMOUNT");
+                throw new InvalidAmountException(Integer.toString(amount));
             }
             synchronized (accounts) {
                 if (!accounts.containsKey(accountFrom)) {
                     debug("NOK: " + accountFrom + " does not exist");
-                    throw new ServerStateException("FROM_DOES_NOT_EXIST");
+                    throw new NonExistingAccountException(accountFrom);
                 }
                 if (!accounts.containsKey(accountTo)) {
                     debug("NOK: " + accountTo + " does not exist");
-                    throw new ServerStateException("TO_DOES_NOT_EXIST");
+                    throw new NonExistingAccountException(accountTo);
                 }
                 if (accounts.get(accountFrom) < amount) {
                     debug("NOK: " + accountFrom + " does not have enough money");
-                    throw new ServerStateException("NOT_ENOUGH_MONEY");
+                    throw new NotEnoughMoneyException(accountFrom);
                 }
-                if (!isPrimary) {
-                    accounts.put(accountFrom, accounts.get(accountFrom) - amount);
-                    accounts.put(accountTo, accounts.get(accountTo) + amount);
-                    ledger.add(new TransferOp(accountFrom, accountTo, amount));
-                } else {
-                    accounts_copy = new HashMap<String, Integer>(accounts);
-                    ledger_copy = new ArrayList<Operation>(ledger);
-                    accounts_copy.put(accountFrom, accounts_copy.get(accountFrom) - amount);
-                    accounts_copy.put(accountTo, accounts_copy.get(accountTo) + amount);
-                    ledger_copy.add(new TransferOp(accountFrom, accountTo, amount));
+                accounts.put(accountFrom, accounts.get(accountFrom) - amount);
+                accounts.put(accountTo, accounts.get(accountTo) + amount);
+                TransferOp transferOp = new TransferOp(accountFrom, accountTo, amount);
+                ledger.add(transferOp);
 
-                    //TODO check if cached server is working
-                    // if (!crossServerService.ping()) this.setCrossServerService();
-
-                    if (crossServerService.propagateState(ledger_copy)) {
-                        this.ledger = ledger_copy;
-                        this.accounts = accounts_copy;
-                        //TODO: is there a way to delete the original ledgers?
-                    }
+                if (!crossServerService.propagateState(transferOp)) {
+                    // If propagation fails, we need to revert the state
+                    debug("NOK: propagation failed, reverting state...");
+                    ledger.remove(transferOp);
+                    accounts.put(accountFrom, accounts.get(accountFrom) + amount);
+                    accounts.put(accountTo, accounts.get(accountTo) - amount);
                 }
             }
         } finally {

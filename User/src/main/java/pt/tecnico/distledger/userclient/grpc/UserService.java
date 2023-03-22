@@ -25,25 +25,25 @@ public class UserService {
         stub = UserServiceGrpc.newBlockingStub(channel);
     }
 
-    public String createAccount(String server, String username) {
+    public String createAccount(String username) {
         CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build();
         CreateAccountResponse response = stub.createAccount(request);
         return response.toString();
     }
 
-    public String deleteAccount(String server, String username) {
+    public String deleteAccount(String username) {
         DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
         DeleteAccountResponse response = stub.deleteAccount(request);
         return response.toString();
     }
 
-    public String balance(String server, String username) {
+    public String balance(String username) {
         BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
         BalanceResponse response = stub.balance(request);
         return response.toString();
     }
 
-    public String transferTo(String server, String from, String dest, Integer amount) {
+    public String transferTo(String from, String dest, Integer amount) {
         TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
         TransferToResponse response = stub.transferTo(request);
         return response.toString();

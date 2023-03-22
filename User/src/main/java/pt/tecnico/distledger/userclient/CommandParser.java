@@ -5,6 +5,7 @@ import pt.tecnico.distledger.userclient.grpc.*;
 import io.grpc.StatusRuntimeException;
 
 import java.util.Scanner;
+import java.util.HashMap;
 
 
 public class CommandParser {
@@ -17,12 +18,15 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
-    private UserService primaryUserService = null;
-    private UserService secondaryUserService = null;
+
     private final NamingServerService namingServerService;
+
+    HashMap<String, UserService> userServices = new HashMap<>();
+
 
     public CommandParser(NamingServerService namingServerService) {
         this.namingServerService = namingServerService;
+        /*
         List<ServerEntry> servers = namingServerService.lookup();
         for (ServerEntry entry : servers) {
             if (primaryUserService == null && entry.getRole == "A") {
@@ -35,7 +39,8 @@ public class CommandParser {
             }
 
         }
-        this.primaryUserService
+        this.primaryUserService;
+        */
     }
 
     void parseInput() {
@@ -71,7 +76,7 @@ public class CommandParser {
                         break;
 
                     case EXIT:
-                        userService.shutdownNow();
+                        //userService.shutdownNow();
                         exit = true;
                         break;
 
@@ -88,6 +93,28 @@ public class CommandParser {
         }
     }
 
+    private boolean lookup(String name, String role) {
+        HashMap<String, String> servers = namingServerService.lookup(name, role);
+
+        if (servers.isEmpty()) {
+            return false;
+        }
+
+        for (HashMap.Entry<String, String> entry: servers.entrySet()) {
+            if (!userServices.containsKey("A") && entry.getValue() == "A") {
+                String[] address = entry.getKey().split(":", 2);
+                UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
+                userServices.put("A", userService);
+            }
+            if (!userServices.containsKey("B") && entry.getValue() == "B") {
+                String[] address = entry.getKey().split(":", 2);
+                UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
+                userServices.put("B", userService);
+            }
+        }
+        return true;
+    }
+
     private void createAccount(String line) {
         String[] split = line.split(SPACE);
         if (split.length != 3){
@@ -97,16 +124,32 @@ public class CommandParser {
         String role = split[1];
         String username = split[2];
 
+        /*
         // CASO 1 TODO: if this wins: userServices.get(role).createAccount(username); {"A":primaryUserService; "B":secondaryUserService}
-        String response;
-        if (role == A)
-            response = primaryUserService.createAccount;
-        else if (role == B)
-            response = secondaryUserService.createAccount;
-        else
-            System.err.println("Invalid role");
-        // CASO 2
-        String response = userService.createAccount(role, username);
+        */
+
+        if (!userServices.containsKey(role)) {
+            if (!this.lookup("DistLedger", role)) {
+                System.err.println("No server available to handle request");
+                return;
+            }
+        }
+
+        String response = userServices.get(role).createAccount(username);
+
+        /*
+        UserService userService = userServices.get(role);
+        if (userService == null) {
+            if (!this.lookup("DistLedger", role)) {
+                System.err.println("No server available to handle request");
+                return;
+            }
+        }
+
+
+        String response = userService.createAccount(username);
+         */
+
         System.out.println("OK");
         System.out.println(response);
     }
@@ -117,10 +160,20 @@ public class CommandParser {
             this.printUsage();
             return;
         }
-        String server = split[1];
+        String role = split[1];
         String username = split[2];
 
-        String response = userService.deleteAccount(server, username);
+        UserService userService = userServices.get(role);
+        if (userService == null) {
+            this.lookup(username, role);
+            if (userServices.get(role) == null) {
+                System.err.println("No server available to handle request");
+                return;
+            }
+            userService = userServices.get(role);
+        }
+
+        String response = userService.deleteAccount(username);
         System.out.println("OK");
         System.out.println(response);
     }

@@ -13,7 +13,7 @@ import java.io.IOException;
 public class ServerMain {
 
 	private static final String NAMING_HOST = "localhost";
-	private static final String NAMING_PORT = "5001";
+	private static final int NAMING_PORT = 5001;
 
 	private static final String SERVICE_NAME = "DistLedger";
 	private static final String SERVER_HOST = "localhost";
@@ -54,13 +54,14 @@ public class ServerMain {
 
 		final NamingServerService namingServerService = new NamingServerService(NAMING_HOST, NAMING_PORT);
 
-		ServerState state = new ServerState(debug, namingServerService, role, SERVICE_NAME);
+		ServerState state = new ServerState(debug, namingServerService, SERVICE_NAME, role, address);
 
 		final BindableService userImpl = new UserServiceImpl(state);
 		final BindableService adminImpl = new AdminServiceImpl(state);
+		final BindableService crossServerImpl = new CrossServerServiceImpl(state);
 
 		// Create a new server to listen on port and start it
-		Server server = ServerBuilder.forPort(port).addService(userImpl).addService(adminImpl).build();
+		Server server = ServerBuilder.forPort(port).addService(userImpl).addService(adminImpl).addService(crossServerImpl).build();
 		try {
 			server.start();
 		} catch (IOException e) {

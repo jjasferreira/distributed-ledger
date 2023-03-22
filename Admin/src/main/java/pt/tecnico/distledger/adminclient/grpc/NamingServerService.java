@@ -1,13 +1,13 @@
-package pt.tecnico.distledger.server.grpc;
-
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.*;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
+package pt.tecnico.distledger.adminclient.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupRequest;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.LookupResponse;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.Server;
+import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
 
 import java.util.HashMap;
-
 
 public class NamingServerService {
 
@@ -17,14 +17,8 @@ public class NamingServerService {
 
     public NamingServerService(String host, int port) {
         final String target = host + ":" + port;
-        channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+		channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         stub = NamingServerServiceGrpc.newBlockingStub(channel);
-    }
-
-    public String register(String name, String role, String address) {
-        RegisterRequest request = RegisterRequest.newBuilder().setServiceName(name).setRole(role).setAddress(address).build();
-        RegisterResponse response = stub.register(request);
-        return response.toString();
     }
 
     public HashMap<String, String> lookup(String name, String role) {
@@ -36,14 +30,8 @@ public class NamingServerService {
         }
         return servers;
     }
-    
-    public String delete(String name, String address) {
-        DeleteRequest request = DeleteRequest.newBuilder().setServiceName(name).setAddress(address).build();
-        DeleteResponse response = stub.delete(request);
-        return response.toString();
-    }
 
     public void shutdownNow() {
-        channel.shutdownNow();
+		channel.shutdownNow();
     }
 }

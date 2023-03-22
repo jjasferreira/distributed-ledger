@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.ServerState;
+import pt.tecnico.distledger.server.domain.exception.*;
 import pt.tecnico.distledger.server.domain.operation.*;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.admin.AdminDistLedger.*;
@@ -9,10 +10,10 @@ import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.Ledger
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
 import io.grpc.stub.StreamObserver;
+import static io.grpc.Status.*;
 
 import java.util.List;
 
-import static io.grpc.Status.INVALID_ARGUMENT;
 
 public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
 
@@ -29,13 +30,11 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             ActivateResponse response = ActivateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        } catch (AlreadyActiveServerException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
-            if (e.getMessage().equals("ALREADY_ACTIVE")) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already active").asRuntimeException());
-            } else {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
-                e.printStackTrace();
-            }
+            responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
+            e.printStackTrace();
         }
     }
 
@@ -46,13 +45,11 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             DeactivateResponse response = DeactivateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        } catch (AlreadyInactiveServerException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
-            if (e.getMessage().equals("ALREADY_INACTIVE")) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Server is already inactive").asRuntimeException());
-            } else {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
-                e.printStackTrace();
-            }
+            responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
+            e.printStackTrace();
         }
     }
 
@@ -63,24 +60,19 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
         LedgerState.Builder ledgerStateBuilder = DistLedgerCommonDefinitions.LedgerState.newBuilder();
         for (Operation op : ledger) {
             DistLedgerCommonDefinitions.Operation operation;
-            if (op instanceof CreateOp) {
+            if (op instanceof CreateOp)
                 operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(op.getAccount()).build();
-            }
-            else if (op instanceof DeleteOp) {
+            else if (op instanceof DeleteOp)
                 operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(op.getAccount()).build();
-            }
-            else if (op instanceof TransferOp) {
+            else if (op instanceof TransferOp)
                 operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(op.getAccount()).setDestUserId(((TransferOp) op).getDestAccount()).setAmount(((TransferOp) op).getAmount()).build();
-            }
-            else {
+            else
                 operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).setUserId(op.getAccount()).build();
-            }
             ledgerStateBuilder.addLedger(operation);
         }
         LedgerState ledgerState = ledgerStateBuilder.build();
         GetLedgerStateResponse response = GetLedgerStateResponse.newBuilder().setLedgerState(ledgerState).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
-
     }
 }
