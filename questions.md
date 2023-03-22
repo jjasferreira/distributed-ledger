@@ -6,16 +6,15 @@
 ## Dúvidas para colocar ao nosso prof:
 SE ALGUEM FOR ABAIXO, NÃO VAI ACONTECER ESSE VOLTAR A SER EXECUTADO
 
-- R: X tempo retries para propagar para o secundário, se ele ainda não estiver executado (usar timeout e extender para os outros métodos)
 - Podemos assumir que o endereço do servidor é localhost ou devemos ir buscá-lo de outra forma?
 - R: arg da linha de comandos?? prof ainda vai falar com docentes
 
-- 
 ## TODO:
-- Primário propaga operação ao secundário antes de responder ao cliente
+- Se primário falhar a propagação da operação ao secundário (por estar off) antes de responder ao cliente, devolve erro para o seu terminal e para o do cliente
 - Se server primário off, pedido de escrita ao primário devolve ERRO
 - Pedidos de escrita ao secundário devolvem sempre ERRO
-- Se secundário off, pedido de escrita ao primário devolve ERRO (não consegue propagar estado)
-- A partir da fase 2, programas clientes não têm argumentos (preciso remover arg parsing)
-- Devemos fazer lookup antes de fazermos propagateState
-- mudar o README.md para incorporar as alterações (-Ddebug="debug")
+- Como dar unbind do port ao parar execução dos processos?
+- Por OK no debug do server secundário
+- Implementar debug do cliente
+- Fazer o admin ligar-se ao Naming Server
+- mudar o README.md para incorporar algumas decisões tomadas (caches nos processos, debug, dupla criação do broker, etc.)

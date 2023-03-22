@@ -17,7 +17,7 @@ Distributed Systems Project 2022/2023
 ## Getting Started
 
 The overall system is made up of several modules. The main server is the _DistLedgerServer_. The clients are the _User_
-and the _Admin_. The definition of messages and services is in the _Contract_. The future naming server
+and the _Admin_. The definition of messages and services is in the _Contract_. The naming server
 is the _NamingServer_.
 
 See the [Project Statement](https://github.com/tecnico-distsys/DistLedger) for a complete domain and system description.
@@ -53,19 +53,31 @@ mvn install
 
 ```s
 cd NamingServer
-mvn compile exec:java [-Dexec.debug=true]"
+mvn compile exec:java [-Ddebug=true]"
 ```
 
-The `-debug` flag is optional and prints all client and server interactions to the terminal.
+The `-debug` flag is optional and prints all interactions related to the Naming Server to the terminal.
+
+4. To compile and run the Server with the primary role (A):
 
 ```s
 cd DistLedgerServer
-mvn compile exec:java -Dexec.args="2001 A [-debug]"
+mvn compile exec:java [-Ddebug=true]"
 ```
 
-The `-debug` flag is optional and prints all user and admin interactions to the terminal.
+The primary Server, in this delivery, is, by default, using the address `localhost:2001`.
+Again, the `-debug` flag is optional and prints all Server interactions to the terminal.
 
-4. Then, you can finally execute multiple instances of admins and/or users by opening new terminals and running:
+5. To compile and run the Server with the secondary role (B):
+
+```s
+cd DistLedgerServer
+mvn compile exec:java -Dexec.args="2002 B" [-Ddebug=true]"
+```
+
+You can change the port to any other available port, but some value must be provided.
+
+6. Then, you can finally execute multiple instances of admins and/or users by opening new terminals and running:
 
 ```s
 cd Admin

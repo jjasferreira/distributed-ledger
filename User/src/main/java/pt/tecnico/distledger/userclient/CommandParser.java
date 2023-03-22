@@ -98,17 +98,16 @@ public class CommandParser {
         if (servers.isEmpty()) {
             return false;
         }
-
-        for (HashMap.Entry<String, String> entry: servers.entrySet()) {
-            if (!userServices.containsKey("A") && entry.getValue() == "A") {
+        for (HashMap.Entry<String, String> entry : servers.entrySet()) {
+            if (!userServices.containsKey("A") && entry.getValue().equals("A")) {
                 String[] address = entry.getKey().split(":", 2);
                 UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
-                userServices.put("A", userService);
+                this.userServices.put("A", userService);
             }
-            if (!userServices.containsKey("B") && entry.getValue() == "B") {
+            if (!userServices.containsKey("B") && entry.getValue().equals("B")) {
                 String[] address = entry.getKey().split(":", 2);
                 UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
-                userServices.put("B", userService);
+                this.userServices.put("B", userService);
             }
         }
         return true;

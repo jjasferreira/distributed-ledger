@@ -161,6 +161,8 @@ public class ServerState {
                 CreateOp createOp = new CreateOp(account);
                 ledger.add(createOp);
 
+                if (crossServerService == null)
+                    this.setCrossServerService();
                 if (!crossServerService.propagateState(createOp)) {
                     // If propagation fails, we need to revert the state
                     debug("NOK: propagation failed, reverting state...");
@@ -209,6 +211,8 @@ public class ServerState {
                 DeleteOp deleteOp = new DeleteOp(account);
                 ledger.add(deleteOp);
 
+                if (crossServerService == null)
+                    this.setCrossServerService();
                 if (!crossServerService.propagateState(deleteOp)) {
                     // If propagation fails, we need to revert the state
                     debug("NOK: propagation failed, reverting state...");
@@ -285,6 +289,8 @@ public class ServerState {
                 TransferOp transferOp = new TransferOp(accountFrom, accountTo, amount);
                 ledger.add(transferOp);
 
+                if (crossServerService == null)
+                    this.setCrossServerService();
                 if (!crossServerService.propagateState(transferOp)) {
                     // If propagation fails, we need to revert the state
                     debug("NOK: propagation failed, reverting state...");

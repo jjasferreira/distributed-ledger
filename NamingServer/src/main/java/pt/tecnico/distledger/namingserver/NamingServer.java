@@ -30,12 +30,10 @@ public class NamingServer {
         // Start the server
         try {
             server.start();
+            System.out.println("Naming Server started");
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // Server threads are running in the background.
-        System.out.println("Naming Server started");
 
         // Do not exit the main thread. Wait until server is terminated.
         try {
