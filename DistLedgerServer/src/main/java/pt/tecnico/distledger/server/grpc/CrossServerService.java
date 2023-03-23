@@ -3,7 +3,6 @@ package pt.tecnico.distledger.server.grpc;
 import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger.*;
 import pt.ulisboa.tecnico.distledger.contract.distledgerserver.DistLedgerCrossServerServiceGrpc;
-
 import pt.tecnico.distledger.server.domain.operation.*;
 
 import io.grpc.StatusRuntimeException;
@@ -20,7 +19,7 @@ public class CrossServerService {
     DistLedgerCrossServerServiceGrpc.DistLedgerCrossServerServiceBlockingStub stub;
 
     public CrossServerService(String target) {
-        // receives target in the form of host:port
+        // Receive target in the form of host:port
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         stub = DistLedgerCrossServerServiceGrpc.newBlockingStub(channel);
     }
@@ -41,7 +40,7 @@ public class CrossServerService {
         DistLedgerCommonDefinitions.LedgerState ledger = DistLedgerCommonDefinitions.LedgerState.newBuilder().addLedger(operation.build()).build();
         PropagateStateRequest request = PropagateStateRequest.newBuilder().setState(ledger).build();
         try {
-            //define a timeout of 2 seconds after which the call will be aborted, and false will be returned
+            // Define a timeout of 2 seconds after which the call will be aborted, and false will be returned
             PropagateStateResponse response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).propagateState(request);
             return true;
         } catch (StatusRuntimeException e) {

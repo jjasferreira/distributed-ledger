@@ -30,7 +30,7 @@ public class NamingServer {
         // Start the server
         try {
             server.start();
-            System.out.println("Naming Server started");
+            System.out.println("Naming Server started on port " + PORT);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -40,6 +40,8 @@ public class NamingServer {
             server.awaitTermination();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        } finally {
+            server.shutdown();
         }
     }
 }

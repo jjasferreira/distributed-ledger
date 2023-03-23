@@ -63,6 +63,7 @@ public class ServerMain {
 
 		// Create a new server to listen on port and start it
 		Server server = ServerBuilder.forPort(port).addService(userImpl).addService(adminImpl).addService(crossServerImpl).build();
+
 		try {
 			server.start();
 		} catch (IOException e) {
@@ -81,8 +82,8 @@ public class ServerMain {
 		} finally {
 			// Delete server from known naming server
 			state.deleteFromNamingServer(SERVICE_NAME, address);
+			server.shutdown();
 		}
-
     }
 
 }

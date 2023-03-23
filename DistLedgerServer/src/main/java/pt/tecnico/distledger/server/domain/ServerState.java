@@ -73,13 +73,18 @@ public class ServerState {
         }
     }
 
-    private void setCrossServerService() {
+    private boolean setCrossServerService() {
+        // Returns true if secondary server is found
         HashMap<String, String> servers = namingServerService.lookup(serviceName, "B");
+        if (servers.isEmpty()) {
+            return false;
+        }
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
             if (entry.getValue().equals("B")) {
                 this.crossServerService = new CrossServerService(entry.getKey());
             }
         }
+        return true;
     }
 
     private void debug(String debugMsg) {
@@ -135,17 +140,10 @@ public class ServerState {
         // TODO: 3rd phase
     }
 
-    public void createAccount(String account) throws InactiveServerException, AlreadyExistingAccountException {
+    public void createAccount(String account) throws WrongServerRoleExeption, InactiveServerException, AlreadyExistingAccountException, NoSecondaryServerException {
         debug("> Creating account " + account + "...");
-        if (!isPrimaryServer()) {
-            // We can assume that request is well-formed and that server is active because otherwise the primary server
-            // wouldn't have propagated the state
-            synchronized(accounts) {
-                accounts.put(account, 0);
-                ledger.add(new CreateOp(account));
-            }
-            return;
-        }
+        if (!isPrimaryServer())
+            throw new WrongServerRoleExeption(this.role);
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -160,11 +158,11 @@ public class ServerState {
                 accounts.put(account, 0);
                 CreateOp createOp = new CreateOp(account);
                 ledger.add(createOp);
-
-                if (crossServerService == null)
-                    this.setCrossServerService();
+                // If there is no secondary server service and none can be found
+                if (crossServerService == null && !this.setCrossServerService())
+                    throw new NoSecondaryServerException();
+                // If propagation fails, we need to revert the state
                 if (!crossServerService.propagateState(createOp)) {
-                    // If propagation fails, we need to revert the state
                     debug("NOK: propagation failed, reverting state...");
                     ledger.remove(createOp);
                     accounts.remove(account);
@@ -176,17 +174,10 @@ public class ServerState {
         }
     }
 
-    public void deleteAccount(String account) throws InactiveServerException, IsBrokerException, NonExistingAccountException, MoneyInAccountException {
+    public void deleteAccount(String account) throws WrongServerRoleException, InactiveServerException, IsBrokerException, NonExistingAccountException, MoneyInAccountException, NoSecondaryServerException {
         debug("> Deleting account " + account + "...");
-        if (!isPrimaryServer()) {
-            // We can assume that request is well-formed and that server is active because otherwise the primary server
-            // wouldn't have propagated the state
-            synchronized(accounts) {
-                accounts.remove(account);
-                ledger.add(new DeleteOp(account));
-            }
-            return;
-        }
+        if (!isPrimaryServer())
+            throw new WrongServerRoleException(this.role);
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -210,11 +201,11 @@ public class ServerState {
                 accounts.remove(account);
                 DeleteOp deleteOp = new DeleteOp(account);
                 ledger.add(deleteOp);
-
-                if (crossServerService == null)
-                    this.setCrossServerService();
+                // If there is no secondary server service and none can be found
+                if (crossServerService == null && !this.setCrossServerService())
+                    throw new NoSecondaryServerException();
+                // If propagation fails, we need to revert the state
                 if (!crossServerService.propagateState(deleteOp)) {
-                    // If propagation fails, we need to revert the state
                     debug("NOK: propagation failed, reverting state...");
                     ledger.remove(deleteOp);
                     accounts.put(account, balance);
@@ -228,8 +219,8 @@ public class ServerState {
 
     public int getBalance(String account) throws InactiveServerException, NonExistingAccountException {
         debug("> Getting balance of account " + account + "...");
-        int balance;
         activeLock.readLock().lock();
+        int balance;
         try {
             if (!active) {
                 debug("NOK: inactive server");
@@ -249,14 +240,10 @@ public class ServerState {
         return balance;
     }
 
-    public void transferTo(String accountFrom, String accountTo, int amount) throws InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException {
+    public void transferTo(String accountFrom, String accountTo, int amount) throws WrongServerRoleException, InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException, NoSecondaryServerException {
         debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
-        if (!isPrimaryServer()) {
-            accounts.put(accountFrom, accounts.get(accountFrom) - amount);
-            accounts.put(accountTo, accounts.get(accountTo) + amount);
-            ledger.add(new TransferOp(accountFrom, accountTo, amount));
-            return;
-        }
+        if (!isPrimaryServer())
+            throw new WrongServerRoleException(this.role);
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -288,17 +275,51 @@ public class ServerState {
                 accounts.put(accountTo, accounts.get(accountTo) + amount);
                 TransferOp transferOp = new TransferOp(accountFrom, accountTo, amount);
                 ledger.add(transferOp);
-
-                if (crossServerService == null)
-                    this.setCrossServerService();
+                // If there is no secondary server service and none can be found
+                if (crossServerService == null && !this.setCrossServerService())
+                    throw new NoSecondaryServerException();
+                // If propagation fails, we need to revert the state
                 if (!crossServerService.propagateState(transferOp)) {
-                    // If propagation fails, we need to revert the state
                     debug("NOK: propagation failed, reverting state...");
                     ledger.remove(transferOp);
                     accounts.put(accountFrom, accounts.get(accountFrom) + amount);
                     accounts.put(accountTo, accounts.get(accountTo) - amount);
                 }
             }
+        } finally {
+            activeLock.readLock().unlock();
+        }
+        debug("OK");
+    }
+
+    public void receivePropagatedState(Operation op) throws InactiveServerException, WrongServerRoleExeption, UnknownOperationException {
+        debug("> Receiving propagated state: " + op);
+        if (isPrimaryServer())
+            throw new WrongServerRoleExeption(this.role);
+        activeLock.readLock().lock();
+        try {
+            if (!active) {
+                debug("NOK: inactive server");
+                throw new InactiveServerException(this.role);
+            }
+            if (op.getType() == OperationType.OP_CREATE_ACCOUNT) {
+                synchronized (accounts) {
+                    accounts.put(account, 0);
+                    ledger.add(new CreateOp(account));
+                }
+            } else if (op.getType() == OperationType.OP_TRANSFER_TO) {
+                synchronized (accounts) {
+                    accounts.put(accountFrom, accounts.get(accountFrom) - amount);
+                    accounts.put(accountTo, accounts.get(accountTo) + amount);
+                    ledger.add(new TransferOp(accountFrom, accountTo, amount));
+                }
+            } else if (op.getType() == OperationType.OP_DELETE_ACCOUNT) {
+                synchronized (accounts) {
+                    accounts.remove(account);
+                    ledger.add(new DeleteOp(account));
+                }
+            } else
+                throw new UnknownOperationException(op.);
         } finally {
             activeLock.readLock().unlock();
         }

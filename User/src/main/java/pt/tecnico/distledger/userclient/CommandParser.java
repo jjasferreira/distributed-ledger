@@ -18,28 +18,15 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
+    private final boolean debug;
 
     private final NamingServerService namingServerService;
 
     HashMap<String, UserService> userServices = new HashMap<>();
 
-    public CommandParser(NamingServerService namingServerService) {
+    public CommandParser(boolean debug, NamingServerService namingServerService) {
+        this.debug = debug;
         this.namingServerService = namingServerService;
-        /*
-        List<ServerEntry> servers = namingServerService.lookup();
-        for (ServerEntry entry : servers) {
-            if (primaryUserService == null && entry.getRole == "A") {
-                String[] hostPort = entry.getAddress.split(":");
-                primaryUserService = new UserService(hostPort[0], hostPort[1]);
-            }
-            if (secondaryUserService == null && entry.getRole == "B") {
-                String[] hostPort = entry.getAddress.split(":");
-                secondaryUserService = new UserService(hostPort[0], hostPort[1]);
-            }
-
-        }
-        this.primaryUserService;
-        */
     }
 
     void parseInput() {
@@ -75,7 +62,10 @@ public class CommandParser {
                         break;
 
                     case EXIT:
-                        //userService.shutdownNow();
+                        namingServerService.shutdownNow();
+                        for (HashMap.Entry<String, UserService> entry : userServices.entrySet()) {
+                            entry.getValue().shutdownNow();
+                        }
                         exit = true;
                         break;
 
@@ -92,12 +82,20 @@ public class CommandParser {
         }
     }
 
+    private void debug(String debugMsg) {
+        if (this.debug)
+            System.err.println("[DEBUG] " + debugMsg);
+    }
+
     private boolean lookup(String name, String role) {
+        debug("> Looking for servers with Service name " + name + " and role " + role + " available ...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
 
         if (servers.isEmpty()) {
+            debug("NOK: No server found");
             return false;
         }
+
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
             if (!userServices.containsKey("A") && entry.getValue().equals("A")) {
                 String[] address = entry.getKey().split(":", 2);
@@ -110,13 +108,17 @@ public class CommandParser {
                 this.userServices.put("B", userService);
             }
         }
+
+        debug("OK");
         return true;
     }
 
     private void createAccount(String line) {
+        debug("> Creating account with command \"" + line + "\"...");
         String[] split = line.split(SPACE);
         if (split.length != 3) {
             this.printUsage();
+            debug("NOK: number of arguments unexpected");
             return;
         }
         String role = split[1];
@@ -124,15 +126,18 @@ public class CommandParser {
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
+                debug("NOK: No server available to handle request");
                 return;
             }
         }
         String response = userServices.get(role).createAccount(username);
         System.out.println("OK");
         System.out.println(response);
+        debug("OK");
     }
 
     private void deleteAccount(String line) {
+        debug("> Deleting account with command \"" + line + "\"...");
         String[] split = line.split(SPACE);
         if (split.length != 3){
             this.printUsage();
@@ -143,15 +148,18 @@ public class CommandParser {
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
+                debug("NOK: No server available to handle request");
                 return;
             }
         }
         String response = userServices.get(role).deleteAccount(username);
         System.out.println("OK");
         System.out.println(response);
+        debug("OK");
     }
 
     private void balance(String line) {
+        debug("> Getting balance with command \"" + line + "\"...");
         String[] split = line.split(SPACE);
         if (split.length != 3){
             this.printUsage();
@@ -162,15 +170,18 @@ public class CommandParser {
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
+                debug("NOK: No server available to handle request");
                 return;
             }
         }
         String response = userServices.get(role).balance(username);
         System.out.println("OK");
         System.out.println(response);
+        debug("OK");
     }
 
     private void transferTo(String line) {
+        debug("> Transferring with command \"" + line + "\"...");
         String[] split = line.split(SPACE);
         if (split.length != 5){
             this.printUsage();
@@ -183,12 +194,14 @@ public class CommandParser {
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
+                debug("NOK: No server available to handle request");
                 return;
             }
         }
         String response = userServices.get(role).transferTo(from, dest, amount);
         System.out.println("OK");
         System.out.println(response);
+        debug("OK");
     }
 
     private void printUsage() {

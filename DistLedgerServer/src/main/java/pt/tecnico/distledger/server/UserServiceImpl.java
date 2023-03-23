@@ -18,24 +18,6 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
     }
 
     @Override
-    public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
-        String username = request.getUserId();
-        try {
-            int balance = state.getBalance(username);
-            BalanceResponse response = BalanceResponse.newBuilder().setValue(balance).build();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        } catch (InactiveServerException e) {
-            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (NonExistingAccountException e) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
-        } catch (Exception e) {
-            responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
-            e.printStackTrace();
-        }
-    }
-
-    @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
         String username = request.getUserId();
         try {
@@ -45,7 +27,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onCompleted();
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (AlreadyExistingAccountException e) {
+        } catch (WrongServerRoleException | AlreadyExistingAccountException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
@@ -57,16 +39,31 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
     public void deleteAccount(DeleteAccountRequest request, StreamObserver<DeleteAccountResponse> responseObserver) {
         String username = request.getUserId();
         try {
-            if (!state.isPrimaryServer()) {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Cannot perform write operation on a secondary server").asRuntimeException());
-            }
             state.deleteAccount(username);
             DeleteAccountResponse response = DeleteAccountResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (NonExistingAccountException | MoneyInAccountException | IsBrokerException e) {
+        } catch (WrongServerRoleException | NonExistingAccountException | MoneyInAccountException | IsBrokerException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        } catch (Exception e) {
+            responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
+        String username = request.getUserId();
+        try {
+            int balance = state.getBalance(username);
+            BalanceResponse response = BalanceResponse.newBuilder().setValue(balance).build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (InactiveServerException e) {
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+        } catch (NonExistingAccountException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
@@ -86,11 +83,12 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onCompleted();
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (NonExistingAccountException | NotEnoughMoneyException | InvalidAmountException | SameAccountException e) {
+        } catch (WrongServerRoleException | NonExistingAccountException | NotEnoughMoneyException | InvalidAmountException | SameAccountException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
     }
+
 }
