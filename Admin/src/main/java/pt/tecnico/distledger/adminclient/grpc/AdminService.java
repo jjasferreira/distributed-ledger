@@ -25,19 +25,19 @@ public class AdminService {
 		stub = AdminServiceGrpc.newBlockingStub(channel);
     }
 
-    public String activate(String server) {
+    public String activate() {
         ActivateRequest request = ActivateRequest.getDefaultInstance();
         ActivateResponse response = stub.activate(request);
         return response.toString();
     }
 
-    public String deactivate(String server) {
+    public String deactivate() {
         DeactivateRequest request  = DeactivateRequest.getDefaultInstance();
         DeactivateResponse response = stub.deactivate(request);
         return response.toString();
     }
 
-    public String getLedgerState(String server) {
+    public String getLedgerState() {
         GetLedgerStateRequest request = GetLedgerStateRequest.getDefaultInstance();
         GetLedgerStateResponse response = stub.getLedgerState(request);
         return response.toString();
