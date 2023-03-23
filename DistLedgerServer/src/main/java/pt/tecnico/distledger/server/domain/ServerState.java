@@ -131,9 +131,18 @@ public class ServerState {
 
     public List<Operation> getLedger() {
         debug("> Getting ledger state...");
-        synchronized (accounts) {
-            debug("OK");
-            return new ArrayList<>(ledger);
+        activeLock.readLock().lock();
+        try {
+            if (!active) {
+                debug("NOK: inactive server");
+                throw new InactiveServerException(this.role);
+            }
+            synchronized (accounts) {
+                debug("OK");
+                return new ArrayList<>(ledger);
+            }
+        } finally {
+            activeLock.readLock().unlock();
         }
     }
 
@@ -167,6 +176,7 @@ public class ServerState {
                     debug("NOK: propagation failed, reverting state...");
                     ledger.remove(createOp);
                     accounts.remove(account);
+                    throw new NoSecondaryServerException();
                 }
             }
             debug("OK");
@@ -210,6 +220,7 @@ public class ServerState {
                     debug("NOK: propagation failed, reverting state...");
                     ledger.remove(deleteOp);
                     accounts.put(account, balance);
+                    throw new NoSecondaryServerException();
                 }
             }
         } finally {
@@ -285,6 +296,7 @@ public class ServerState {
                     ledger.remove(transferOp);
                     accounts.put(accountFrom, accounts.get(accountFrom) + amount);
                     accounts.put(accountTo, accounts.get(accountTo) - amount);
+                    throw new NoSecondaryServerException();
                 }
             }
         } finally {

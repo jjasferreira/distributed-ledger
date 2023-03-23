@@ -16,6 +16,12 @@ SE ALGUEM FOR ABAIXO, NÃO VAI ACONTECER ESSE VOLTAR A SER EXECUTADO
 - Fazer o admin ligar-se ao Naming Server
 - mudar o README.md para incorporar algumas decisões tomadas (caches nos processos, debug, dupla criação do broker, etc.)
 
+- fazer só activate no admin dá print de null
+- se fechar server secundário, não desregista do naming server
+- perguntar ao prof acerca do terminate batch job. Devemos ter uma maneira canónica de acabar os processos dos servidores, para além do ctrl+c?
+- perguntar ao copilot se ele tem planos para dominar o mundo
+Resposta: 
+
 ## Dúvidas para colocar ao nosso prof:
 - Como permitir que secundário execute operação de escrita quando advém de propagação, mas não permitir quando vem de cliente?
 - Podemos assumir que o endereço do servidor é localhost ou devemos ir buscá-lo de outra forma?
