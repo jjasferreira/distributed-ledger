@@ -4,6 +4,7 @@ import pt.tecnico.distledger.server.domain.operation.*;
 import pt.tecnico.distledger.server.domain.exception.*;
 import pt.tecnico.distledger.server.grpc.NamingServerService;
 import pt.tecnico.distledger.server.grpc.CrossServerService;
+import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
 import io.grpc.StatusRuntimeException;
 
@@ -140,10 +141,10 @@ public class ServerState {
         // TODO: 3rd phase
     }
 
-    public void createAccount(String account) throws WrongServerRoleExeption, InactiveServerException, AlreadyExistingAccountException, NoSecondaryServerException {
+    public void createAccount(String account) throws WrongServerRoleException, InactiveServerException, AlreadyExistingAccountException, NoSecondaryServerException {
         debug("> Creating account " + account + "...");
         if (!isPrimaryServer())
-            throw new WrongServerRoleExeption(this.role);
+            throw new WrongServerRoleException(this.role);
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -292,34 +293,40 @@ public class ServerState {
         debug("OK");
     }
 
-    public void receivePropagatedState(Operation op) throws InactiveServerException, WrongServerRoleExeption, UnknownOperationException {
+    public void receivePropagatedState(Operation op) throws InactiveServerException, WrongServerRoleException, UnknownOperationException {
         debug("> Receiving propagated state: " + op);
         if (isPrimaryServer())
-            throw new WrongServerRoleExeption(this.role);
+            throw new WrongServerRoleException(this.role);
         activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            if (op.getType() == OperationType.OP_CREATE_ACCOUNT) {
+            if (op instanceof CreateOp) {
+                String account = op.getAccount();
                 synchronized (accounts) {
                     accounts.put(account, 0);
                     ledger.add(new CreateOp(account));
                 }
-            } else if (op.getType() == OperationType.OP_TRANSFER_TO) {
+            } else if (op instanceof TransferOp) {
+                TransferOp transferOp = (TransferOp) op;
+                String accountFrom = transferOp.getAccount();
+                String accountTo = transferOp.getDestAccount();
+                int amount = transferOp.getAmount();
                 synchronized (accounts) {
                     accounts.put(accountFrom, accounts.get(accountFrom) - amount);
                     accounts.put(accountTo, accounts.get(accountTo) + amount);
                     ledger.add(new TransferOp(accountFrom, accountTo, amount));
                 }
-            } else if (op.getType() == OperationType.OP_DELETE_ACCOUNT) {
+            } else if (op instanceof DeleteOp) {
+                String account = op.getAccount();
                 synchronized (accounts) {
                     accounts.remove(account);
                     ledger.add(new DeleteOp(account));
                 }
             } else
-                throw new UnknownOperationException(op.);
+                throw new UnknownOperationException();
         } finally {
             activeLock.readLock().unlock();
         }
