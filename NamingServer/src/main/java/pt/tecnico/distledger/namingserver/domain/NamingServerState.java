@@ -60,11 +60,7 @@ public class NamingServerState {
             ServiceEntry service = services.get(name);
             if (service != null) {
                 for (ServerEntry server : service.getServers()) {
-                    if (role == null) {
-                        servers.add(server);
-                        continue;
-                    }
-                    if (server.getRole().equals(role))
+                    if (role == null || server.getRole().equals(role))
                         servers.add(server);
                 }
             }

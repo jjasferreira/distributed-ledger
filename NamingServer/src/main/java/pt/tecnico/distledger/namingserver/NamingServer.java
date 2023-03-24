@@ -39,7 +39,11 @@ public class NamingServer {
         try {
             System.out.println("Press enter to shutdown");
             System.in.read();
+            if (debug)
+                System.err.println("[DEBUG] Shutting down...");
             server.shutdown();
+            if (debug)
+                System.err.println("[DEBUG] OK");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

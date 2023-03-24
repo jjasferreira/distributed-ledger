@@ -90,12 +90,10 @@ public class CommandParser {
     private boolean lookup(String name, String role) {
         debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
-
         if (servers.isEmpty()) {
-            debug("NOK: No server found");
+            debug("NOK: no server found");
             return false;
         }
-
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
             if (!adminServices.containsKey("A") && entry.getValue().equals("A")) {
                 String[] address = entry.getKey().split(":", 2);
@@ -108,75 +106,62 @@ public class CommandParser {
                 this.adminServices.put("B", adminService);
             }
         }
-
         debug("OK");
         return true;
     }
 
     private void activate(String line){
-        debug("> Activating server with arguments \"" + line + "\"...");
         String role = lineParse(line);
-
-        if (role == null) {
+        if (role == null)
             return;
-        }
-
+        debug("> Activating server with role " + role + "...");
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: no server with given role available to handle request");
+                System.err.println("No server available");
                 return;
             }
         }
-
         String response = adminServices.get(role).activate();
+        debug("OK");
         System.out.println("OK");
         System.out.println(response);
-        debug("OK");
     }
 
     private void deactivate(String line){
-        debug("> Deactivating server with arguments \"" + line + "\"...");
         String role = lineParse(line);
-
-        if (role == null) {
+        if (role == null)
             return;
-        }
-
+        debug("> Deactivating server with role " + role + "...");
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: no server with given role available to handle request");
+                System.err.println("No server available");
                 return;
             }
         }
-
         String response = adminServices.get(role).deactivate();
+        debug("OK");
         System.out.println("OK");
         System.out.println(response);
-        debug("OK");
     }
 
     private void dump(String line){
-        debug("> Dumping ledger state with arguments \"" + line + "\"...");
         String role = lineParse(line);
-
-        if (role == null) {
+        if (role == null)
             return;
-        }
-
+        debug("> Getting ledger state of server with role " + role + "...");
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: No server with given role available to handle request");
+                System.err.println("No server available");
                 return;
             }
         }
-
         String response = adminServices.get(role).getLedgerState();
+        debug("OK");
         System.out.println("OK");
         System.out.println(response);
-        debug("OK");
     }
 
     private void gossip(String line) {
@@ -187,7 +172,7 @@ public class CommandParser {
         String[] split = line.split(SPACE);
         if (split.length != 2){
             this.printUsage();
-            debug("NOK: number of arguments unexpected");
+            debug("NOK: unexpected number of arguments");
             return null;
         }
         return split[1];

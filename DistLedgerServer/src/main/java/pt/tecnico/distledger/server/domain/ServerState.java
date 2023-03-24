@@ -55,6 +55,7 @@ public class ServerState {
         debug("> Registering server to naming server...");
         try {
             namingServerService.register(name, role, address);
+            debug("OK");
             System.out.println("Server registered to naming server");
             return true;
         } catch (StatusRuntimeException e) {
@@ -70,6 +71,7 @@ public class ServerState {
         debug("> Deleting server from naming server...");
         try {
             namingServerService.delete(name, address);
+            debug("OK");
             System.out.println("Server deleted from naming server");
         } catch (StatusRuntimeException e) {
             System.err.println("Caught exception with description: " + e.getStatus().getDescription());
@@ -152,8 +154,10 @@ public class ServerState {
 
     public void createAccount(String account) throws WrongServerRoleException, InactiveServerException, AlreadyExistingAccountException, NoSecondaryServerException {
         debug("> Creating account " + account + "...");
-        if (!isPrimaryServer())
+        if (!isPrimaryServer()) {
+            debug("NOK: cannot do this on servers with role " + this.role);
             throw new WrongServerRoleException(this.role);
+        }
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -187,8 +191,10 @@ public class ServerState {
 
     public void deleteAccount(String account) throws WrongServerRoleException, InactiveServerException, IsBrokerException, NonExistingAccountException, MoneyInAccountException, NoSecondaryServerException {
         debug("> Deleting account " + account + "...");
-        if (!isPrimaryServer())
+        if (!isPrimaryServer()) {
+            debug("NOK: cannot do this on servers with role " + this.role);
             throw new WrongServerRoleException(this.role);
+        }
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -196,7 +202,7 @@ public class ServerState {
                 throw new InactiveServerException(this.role);
             }
             if (account.equals("broker")) {
-                debug("NOK: " + account + " is the broker account");
+                debug("NOK: cannot delete the broker account");
                 throw new IsBrokerException();
             }
             synchronized (accounts) {
@@ -254,8 +260,10 @@ public class ServerState {
 
     public void transferTo(String accountFrom, String accountTo, int amount) throws WrongServerRoleException, InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException, NoSecondaryServerException {
         debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
-        if (!isPrimaryServer())
+        if (!isPrimaryServer()) {
+            debug("NOK: cannot do this on servers with role " + this.role);
             throw new WrongServerRoleException(this.role);
+        }
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -307,8 +315,10 @@ public class ServerState {
 
     public void receivePropagatedState(Operation op) throws InactiveServerException, WrongServerRoleException, UnknownOperationException {
         debug("> Receiving propagated state: " + op);
-        if (isPrimaryServer())
+        if (isPrimaryServer()) {
+            debug("NOK: cannot do this on servers with role " + this.role);
             throw new WrongServerRoleException(this.role);
+        }
         activeLock.readLock().lock();
         try {
             if (!active) {

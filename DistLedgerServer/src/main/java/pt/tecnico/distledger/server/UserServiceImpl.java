@@ -27,7 +27,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onCompleted();
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (WrongServerRoleException | AlreadyExistingAccountException e) {
+        } catch (WrongServerRoleException | AlreadyExistingAccountException | NoSecondaryServerException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
@@ -45,7 +45,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onCompleted();
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (WrongServerRoleException | NonExistingAccountException | MoneyInAccountException | IsBrokerException e) {
+        } catch (WrongServerRoleException | NonExistingAccountException | MoneyInAccountException | IsBrokerException | NoSecondaryServerException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
@@ -83,7 +83,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onCompleted();
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        } catch (WrongServerRoleException | NonExistingAccountException | NotEnoughMoneyException | InvalidAmountException | SameAccountException e) {
+        } catch (WrongServerRoleException | NonExistingAccountException | NotEnoughMoneyException | InvalidAmountException | SameAccountException | NoSecondaryServerException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());

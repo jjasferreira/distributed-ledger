@@ -76,12 +76,12 @@ mvn compile exec:java -Dexec.args="2002 B" [-Ddebug=true]
 
 ```s
 cd Admin
-mvn compile exec:java
+mvn compile exec:java [-Ddebug=true]
 ```
 
 ```s
 cd User
-mvn compile exec:java
+mvn compile exec:java [-Ddebug=true]
 ```
 
 ### Implementation details
