@@ -88,11 +88,11 @@ public class CommandParser {
     }
 
     private boolean lookup(String name, String role) {
-        debug("> Looking for servers with Service name " + name + " and role " + role + " available ...");
+        debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
 
         if (servers.isEmpty()) {
-            debug("NOK: No server found");
+            debug("NOK: no server found");
             return false;
         }
 
@@ -125,8 +125,7 @@ public class CommandParser {
         String username = split[2];
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: no server available to handle request");
                 return;
             }
         }
@@ -147,8 +146,7 @@ public class CommandParser {
         String username = split[2];
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: no server available to handle request");
                 return;
             }
         }
@@ -169,8 +167,7 @@ public class CommandParser {
         String username = split[2];
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: no server available to handle request");
                 return;
             }
         }
@@ -194,7 +191,7 @@ public class CommandParser {
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
-                debug("NOK: No server available to handle request");
+                debug("NOK: no server available to handle request");
                 return;
             }
         }

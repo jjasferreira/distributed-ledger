@@ -1,13 +1,13 @@
 package pt.tecnico.distledger.namingserver;
 
 import pt.tecnico.distledger.namingserver.domain.*;
-import pt.ulisboa.tecnico.distledger.contract.distledgerserver.CrossServerDistLedger;
 
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
 import java.io.IOException;
+import static java.lang.System.exit;
 
 
 public class NamingServer {
@@ -37,11 +37,13 @@ public class NamingServer {
 
         // Do not exit the main thread. Wait until server is terminated.
         try {
-            server.awaitTermination();
-        } catch (InterruptedException e) {
+            System.out.println("Press enter to shutdown");
+            System.in.read();
+            server.shutdown();
+        } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            server.shutdown();
+            exit(0);
         }
     }
 }

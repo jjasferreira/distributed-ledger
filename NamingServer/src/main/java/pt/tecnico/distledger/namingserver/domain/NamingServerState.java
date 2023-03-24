@@ -23,7 +23,7 @@ public class NamingServerState {
     }
 
     // register: Registers a new server in a service of the naming server list of services.
-    public void register(String name, String role, String address) throws NamingServerStateException {
+    public void register(String name, String role, String address) throws AlreadyRegisteredAddressException, AlreadyRegisteredRoleException {
         debug("> Registering server " + address + " with role " + role + " to the service " + name + "...");
 
         synchronized (services) {
@@ -33,11 +33,11 @@ public class NamingServerState {
                 for (ServerEntry server : service.getServers()) {
                     if (server.getAddress().equals(address)) {
                         debug("NOK: address " + address + " already registered for service " + name);
-                        throw new NamingServerStateException("ADDRESS_ALREADY_REGISTERED");
+                        throw new AlreadyRegisteredAddressException(address, name);
                     }
                     if (server.getRole().equals(role)) {
                         debug("NOK: role " + role + " already registered for service " + name);
-                        throw new NamingServerStateException("ROLE_ALREADY_REGISTERED");
+                        throw new AlreadyRegisteredRoleException(role, name);
                     }
                 }
             } else { // If the service does not exist, create it
@@ -51,13 +51,12 @@ public class NamingServerState {
     }
 
     // lookup: Returns a list containing servers of a specific service and role.
-    public List<ServerEntry> lookup(String name, String role) throws NamingServerStateException {
+    public List<ServerEntry> lookup(String name, String role) {
         if (role != null)
             debug("> Looking up server with role " + role + " in the service " + name + "...");
         else
             debug("> Looking up all servers in the service " + name + "...");
         List<ServerEntry> servers = new ArrayList<>();
-        // TODO ask teacher about using read/writeLock vs synchronized on the naming server
         synchronized (services) {
             ServiceEntry service = services.get(name);
             if (service != null) {
@@ -76,13 +75,13 @@ public class NamingServerState {
     }
 
     // delete: Deletes a server from a service of the naming server list of services.
-    public void delete(String name, String address) throws NamingServerStateException {
+    public void delete(String name, String address) throws NonExistingServiceException, NonExistingAddressException {
         debug("> Deleting server " + address + " from the service " + name + "...");
         synchronized (services) {
             ServiceEntry service = services.get(name);
             if (service == null) {
                 debug("NOK: service " + name + " does not exist");
-                throw new NamingServerStateException("SERVICE_DOES_NOT_EXIST");
+                throw new NonExistingServiceException(name);
             }
             for (ServerEntry server : service.getServers()) {
                 if (server.getAddress().equals(address)) {
@@ -95,6 +94,6 @@ public class NamingServerState {
             }
         }
         debug("NOK: address " + address + " does not exist for service " + name);
-        throw new NamingServerStateException("ADDRESS_DOES_NOT_EXIST");
+        throw new NonExistingAddressException(address, name);
     }
 }

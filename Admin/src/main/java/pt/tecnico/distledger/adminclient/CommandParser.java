@@ -88,7 +88,7 @@ public class CommandParser {
     }
 
     private boolean lookup(String name, String role) {
-        debug("> Looking for servers with Service name " + name + " and role " + role + " available ...");
+        debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
 
         if (servers.isEmpty()) {
@@ -117,6 +117,10 @@ public class CommandParser {
         debug("> Activating server with arguments \"" + line + "\"...");
         String role = lineParse(line);
 
+        if (role == null) {
+            return;
+        }
+
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
@@ -135,6 +139,10 @@ public class CommandParser {
         debug("> Deactivating server with arguments \"" + line + "\"...");
         String role = lineParse(line);
 
+        if (role == null) {
+            return;
+        }
+
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 System.err.println("No server available to handle request");
@@ -152,6 +160,10 @@ public class CommandParser {
     private void dump(String line){
         debug("> Dumping ledger state with arguments \"" + line + "\"...");
         String role = lineParse(line);
+
+        if (role == null) {
+            return;
+        }
 
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {

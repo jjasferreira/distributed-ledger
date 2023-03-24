@@ -7,6 +7,7 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
+import static java.lang.System.exit;
 import java.io.IOException;
 
 
@@ -22,9 +23,9 @@ public class ServerMain {
 
     public static void main(String[] args) {
 
-        System.out.println(ServerMain.class.getSimpleName());
+		System.out.println(ServerMain.class.getSimpleName());
 
-        // Receive and print arguments
+		// Receive and print arguments
 		System.out.printf("Received %d arguments%n", args.length);
 		for (int i = 0; i < args.length; i++) {
 			System.out.printf("arg[%d] = %s%n", i, args[i]);
@@ -71,18 +72,24 @@ public class ServerMain {
 		}
 		System.out.println("Server started");
 
-		// Register server to known naming server
-		state.registerToNamingServer(SERVICE_NAME, role, address);
+		// If register server to known naming server fails, exit
+		if (!state.registerToNamingServer(SERVICE_NAME, role, address)) {
+			state.shutdownServices();
+			server.shutdown();
+			exit(0);
+		}
 
 		// Do not exit the main thread. Wait until server is terminated.
 		try {
-			server.awaitTermination();
-		} catch (InterruptedException e) {
+			System.out.println("Press enter to shutdown");
+            System.in.read();
+			state.deleteFromNamingServer(SERVICE_NAME, address);
+			state.shutdownServices();
+			server.shutdown();
+		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {
-			// Delete server from known naming server
-			state.deleteFromNamingServer(SERVICE_NAME, address);
-			server.shutdown();
+			exit(0);
 		}
     }
 

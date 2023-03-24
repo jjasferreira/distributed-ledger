@@ -4,7 +4,6 @@ import pt.tecnico.distledger.server.domain.operation.*;
 import pt.tecnico.distledger.server.domain.exception.*;
 import pt.tecnico.distledger.server.grpc.NamingServerService;
 import pt.tecnico.distledger.server.grpc.CrossServerService;
-import pt.ulisboa.tecnico.distledger.contract.DistLedgerCommonDefinitions.OperationType;
 
 import io.grpc.StatusRuntimeException;
 
@@ -52,14 +51,17 @@ public class ServerState {
 
     }
 
-    public void registerToNamingServer(String name, String role, String address) {
+    public boolean registerToNamingServer(String name, String role, String address) {
         try {
             namingServerService.register(name, role, address);
             System.out.println("Server registered to naming server");
+            return true;
         } catch (StatusRuntimeException e) {
             System.err.println("Caught exception with description: " + e.getStatus().getDescription());
+            return false;
         } catch (Exception e) {
             System.err.println(e.getMessage());
+            return false;
         }
     }
 
@@ -144,10 +146,6 @@ public class ServerState {
         } finally {
             activeLock.readLock().unlock();
         }
-    }
-
-    public void gossip() {
-        // TODO: 3rd phase
     }
 
     public void createAccount(String account) throws WrongServerRoleException, InactiveServerException, AlreadyExistingAccountException, NoSecondaryServerException {
@@ -345,4 +343,15 @@ public class ServerState {
         debug("OK");
     }
 
+    public void gossip() {
+        // TODO: 3rd phase
+    }
+
+    public void shutdownServices() {
+        debug("> Shutting down services...");
+        namingServerService.shutdownNow();
+        if (crossServerService != null)
+            crossServerService.shutdownNow();
+        debug("OK");
+    }
 }

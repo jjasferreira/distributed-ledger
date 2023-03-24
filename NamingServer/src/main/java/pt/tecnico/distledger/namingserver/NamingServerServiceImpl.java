@@ -1,15 +1,15 @@
 package pt.tecnico.distledger.namingserver;
 
-import pt.tecnico.distledger.namingserver.domain.*;
+import pt.tecnico.distledger.namingserver.domain.NamingServerState;
+import pt.tecnico.distledger.namingserver.domain.exception.*;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServerServiceGrpc;
-import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer;
 import pt.ulisboa.tecnico.distledger.contract.namingserver.NamingServer.*;
 
+import io.grpc.stub.StreamObserver;
+import static io.grpc.Status.*;
 
 import java.util.List;
 
-import static io.grpc.Status.INVALID_ARGUMENT;
-import io.grpc.stub.StreamObserver;
 
 public class NamingServerServiceImpl extends NamingServerServiceGrpc.NamingServerServiceImplBase {
 
@@ -34,10 +34,12 @@ public class NamingServerServiceImpl extends NamingServerServiceGrpc.NamingServe
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("This address is already registered for this service").asRuntimeException());
             } else if (e.getMessage().equals("ROLE_ALREADY_REGISTERED")) {
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("This role is already registered for this service").asRuntimeException());
-            } else {
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Unknown error").asRuntimeException());
-                e.printStackTrace();
             }
+        } catch (WrongServerRoleException | AlreadyExistingAccountException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
+        } catch (Exception e) {
+            responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
+            e.printStackTrace();
         }
     }
 
