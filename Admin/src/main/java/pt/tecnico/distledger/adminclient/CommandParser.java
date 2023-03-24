@@ -179,8 +179,7 @@ public class CommandParser {
         debug("OK");
     }
 
-    private void gossip(String line){
-        //TODO: next phases
+    private void gossip(String line) {
         System.out.println("TODO: implement gossip command (only for phase 3)");
     }
 

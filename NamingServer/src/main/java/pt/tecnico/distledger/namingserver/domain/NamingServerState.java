@@ -25,7 +25,6 @@ public class NamingServerState {
     // register: Registers a new server in a service of the naming server list of services.
     public void register(String name, String role, String address) throws AlreadyRegisteredAddressException, AlreadyRegisteredRoleException {
         debug("> Registering server " + address + " with role " + role + " to the service " + name + "...");
-
         synchronized (services) {
             ServiceEntry service = services.get(name);
             // If the service exists, check if the role or address is already registered

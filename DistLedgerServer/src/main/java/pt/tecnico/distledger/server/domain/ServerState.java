@@ -52,6 +52,7 @@ public class ServerState {
     }
 
     public boolean registerToNamingServer(String name, String role, String address) {
+        debug("> Registering server to naming server...");
         try {
             namingServerService.register(name, role, address);
             System.out.println("Server registered to naming server");
@@ -66,6 +67,7 @@ public class ServerState {
     }
 
     public void deleteFromNamingServer(String name, String address) {
+        debug("> Deleting server from naming server...");
         try {
             namingServerService.delete(name, address);
             System.out.println("Server deleted from naming server");
@@ -344,7 +346,7 @@ public class ServerState {
     }
 
     public void gossip() {
-        // TODO: 3rd phase
+        // TODO: implement gossip command (only for phase 3)
     }
 
     public void shutdownServices() {
