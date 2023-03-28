@@ -22,15 +22,6 @@ message CreateAccountResponse {
   repeated int32 TS = 1;
 }
 
-message DeleteAccountRequest {
-  string userId = 1;
-  repeated int32 prevTS = 2;
-}
-
-message DeleteAccountResponse {
-  repeated int32 TS = 1;
-}
-
 message TransferToRequest {
   string accountFrom = 1;
   string accountTo = 2;
@@ -45,6 +36,5 @@ message TransferToResponse {
 service UserService {
   rpc balance(BalanceRequest) returns (BalanceResponse);
   rpc createAccount(CreateAccountRequest) returns (CreateAccountResponse);
-  rpc deleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
   rpc transferTo(TransferToRequest) returns (TransferToResponse);
 }
