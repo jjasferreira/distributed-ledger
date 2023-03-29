@@ -22,7 +22,3 @@ message Operation {
 message LedgerState {
   repeated Operation ledger = 1;
 }
-
-
-
-

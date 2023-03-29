@@ -6,6 +6,8 @@ import io.grpc.StatusRuntimeException;
 
 import java.util.Scanner;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 
 public class CommandParser {
@@ -22,11 +24,14 @@ public class CommandParser {
 
     private final NamingServerService namingServerService;
 
+    private List<Integer> prevTS;
+
     HashMap<String, UserService> userServices = new HashMap<>();
 
     public CommandParser(boolean debug, NamingServerService namingServerService) {
         this.debug = debug;
         this.namingServerService = namingServerService;
+        this.prevTS = new ArrayList<>();
     }
 
     void parseInput() {
@@ -63,9 +68,8 @@ public class CommandParser {
 
                     case EXIT:
                         namingServerService.shutdownNow();
-                        for (HashMap.Entry<String, UserService> entry : userServices.entrySet()) {
-                            entry.getValue().shutdownNow();
-                        }
+                        for (HashMap.Entry<String, UserService> service : userServices.entrySet())
+                            service.getValue().shutdownNow();
                         exit = true;
                         break;
 
@@ -82,9 +86,21 @@ public class CommandParser {
         }
     }
 
-    private void debug(String debugMsg) {
+    private void debug(String message) {
         if (this.debug)
-            System.err.println("[DEBUG] " + debugMsg);
+            System.err.println("[DEBUG] " + message);
+    }
+
+    private void updateLocalTimestamp(List<Integer> newTS) {
+        debug("OK: " + prevTS + " --> " + newTS);
+        // Create a new list and copy the elements from newTS
+        List<Integer> copiedTS = new ArrayList<>(newTS);
+        int sizeTS = copiedTS.size();
+        for (int i = 0; i < sizeTS; i++) {
+            // Update the element in prevTS with the value from newTS if it is greater
+            if (prevTS.get(i) == null || copiedTS.get(i) > prevTS.get(i))
+                prevTS.set(i, copiedTS.get(i));
+        }
     }
 
     private boolean lookup(String name, String role) {
@@ -127,37 +143,14 @@ public class CommandParser {
                 return;
             }
         }
-        String response = userServices.get(role).createAccount(username);
-        debug("OK");
-        System.out.println("OK");
-        System.out.println(response);
-    }
-
-    private void deleteAccount(String line) {
-        String[] split = line.split(SPACE);
-        if (split.length != 3){
-            this.printUsage();
-            return;
-        }
-        String role = split[1];
-        String username = split[2];
-        debug("> Deleting account " + username + " on server with role " + role + "...");
-        if (!userServices.containsKey(role)) {
-            if (!this.lookup("DistLedger", role)) {
-                debug("NOK: no server with given role available to handle request");
-                System.err.println("No server available");
-                return;
-            }
-        }
-        String response = userServices.get(role).deleteAccount(username);
-        debug("OK");
-        System.out.println("OK");
-        System.out.println(response);
+        List<Integer> newTS = userServices.get(role).createAccount(username, prevTS);
+        updateLocalTimestamp(newTS);
+        System.out.println("OK\n");
     }
 
     private void balance(String line) {
         String[] split = line.split(SPACE);
-        if (split.length != 3){
+        if (split.length != 3) {
             this.printUsage();
             return;
         }
@@ -171,23 +164,22 @@ public class CommandParser {
                 return;
             }
         }
-        String response = userServices.get(role).balance(username);
-        debug("OK");
-        System.out.println("OK");
-        System.out.println(response);
+        BalanceInfo info = userServices.get(role).balance(username, prevTS);
+        updateLocalTimestamp(info.getValueTS());
+        System.out.println("OK\n" + info.getValue() + "\n");
     }
 
     private void transferTo(String line) {
         String[] split = line.split(SPACE);
-        if (split.length != 5){
+        if (split.length != 5) {
             this.printUsage();
             return;
         }
         String role = split[1];
         String from = split[2];
-        String dest = split[3];
+        String to = split[3];
         Integer amount = Integer.valueOf(split[4]);
-        debug("> Transferring " + amount + " from account " + from + " to account " + dest + " on server with role " + role + "...");
+        debug("> Transferring " + amount + " from account " + from + " to account " + to + " on server with role " + role + "...");
         if (!userServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
                 debug("NOK: no server with given role available to handle request");
@@ -195,18 +187,17 @@ public class CommandParser {
                 return;
             }
         }
-        String response = userServices.get(role).transferTo(from, dest, amount);
-        debug("OK");
-        System.out.println("OK");
-        System.out.println(response);
+        List<Integer> newTS = userServices.get(role).transferTo(from, to, amount, prevTS);
+        updateLocalTimestamp(newTS);
+        System.out.println("OK\n");
     }
 
     private void printUsage() {
         System.out.println("Usage:\n" +
                         "- createAccount <server> <username>\n" +
-                        "- deleteAccount <server> <username>\n" +
                         "- balance <server> <username>\n" +
                         "- transferTo <server> <username_from> <username_to> <amount>\n" +
                         "- exit\n");
     }
+
 }

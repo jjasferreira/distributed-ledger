@@ -8,6 +8,7 @@ import io.grpc.ManagedChannelBuilder;
 
 import java.util.HashMap;
 
+
 public class NamingServerService {
 
     final ManagedChannel channel;
@@ -24,13 +25,13 @@ public class NamingServerService {
         LookupRequest request = LookupRequest.newBuilder().setServiceName(name).setRole(role).build();
         LookupResponse response = stub.lookup(request);
         HashMap<String, String> servers = new HashMap<>();
-        for (Server server : response.getServers().getServerList()) {
+        for (Server server : response.getServers().getServerList())
             servers.put(server.getAddress(), server.getRole());
-        }
         return servers;
     }
 
     public void shutdownNow() {
 		channel.shutdownNow();
     }
+
 }

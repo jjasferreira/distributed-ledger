@@ -2,9 +2,11 @@ package pt.tecnico.distledger.userclient.grpc;
 
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
+import pt.tecnico.distledger.userclient.BalanceInfo;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+
 
 public class UserService {
 
@@ -25,28 +27,43 @@ public class UserService {
         stub = UserServiceGrpc.newBlockingStub(channel);
     }
 
-    public String createAccount(String username) {
-        CreateAccountRequest request = CreateAccountRequest.newBuilder().setUserId(username).build();
+    public List<Integer> createAccount(String username, List<Integer> timestamp) {
+        CreateAccountRequest request = CreateAccountRequest.newBuilder()
+                .setUserId(username)
+                .setPrevTS(timestamp)
+                .build();
         CreateAccountResponse response = stub.createAccount(request);
-        return response.toString();
+        return response.getTSList();
     }
 
     public String deleteAccount(String username) {
-        DeleteAccountRequest request = DeleteAccountRequest.newBuilder().setUserId(username).build();
+        DeleteAccountRequest request = DeleteAccountRequest.newBuilder()
+                .setUserId(username)
+                .build();
         DeleteAccountResponse response = stub.deleteAccount(request);
         return response.toString();
     }
 
-    public String balance(String username) {
-        BalanceRequest request = BalanceRequest.newBuilder().setUserId(username).build();
+    public BalanceInfo balance(String username, List<Integer> timestamp) {
+        BalanceRequest request = BalanceRequest.newBuilder()
+                .setUserId(username)
+                .setPrevTS(timestamp)
+                .build();
         BalanceResponse response = stub.balance(request);
-        return response.toString();
+        Integer value = response.getValue();
+        List<Integer> valueTS = response.getValueTSList();
+        return new BalanceInfo(value, valueTS);
     }
 
-    public String transferTo(String from, String dest, Integer amount) {
-        TransferToRequest request = TransferToRequest.newBuilder().setAccountFrom(from).setAccountTo(dest).setAmount(amount).build();
+    public List<Integer> transferTo(String from, String to, Integer amount, List<Integer> timestamp) {
+        TransferToRequest request = TransferToRequest.newBuilder()
+                .setAccountFrom(from)
+                .setAccountTo(to)
+                .setAmount(amount)
+                .setPrevTS(timestamp)
+                .build();
         TransferToResponse response = stub.transferTo(request);
-        return response.toString();
+        return response.getTSList();
     }
 
     public void shutdownNow() {
