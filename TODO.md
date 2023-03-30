@@ -2,6 +2,20 @@
 
 ```
 DISTLEDGER/REPLICAMANAGER?:
+
+    REGISTER FUNCTION:
+    when registering to naming server
+    for each replica found
+        counter++
+        cria stub, guarda numa lista indexada pelo replicaID respetivo
+    
+    this.replicaID = counter
+    
+    UPDATE FUNCTION:
+    lookup
+    se não tiver crossserverService para algum, adiciona-o
+
+
     private int replicaId;
     private List<Integer> replicaTS;
     private List<Integer> valueTS; // need to instantiate lists on constructor
@@ -58,24 +72,27 @@ DISTLEDGER/REPLICAMANAGER?:
 
 - Q: Replica Manager é uma nova classe?
 - A: Não, o stub em si é o frontend para as replicas
-- Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
-- A: 
 - Q: É suposto termos vários métodos de operações de escrita em execução à espera que o valueTS seja atualizado para acabarem de correr ou saímos da função e fazemos essa verificação a cada update? O blockingStub tem alguma coisa a ver com isto?
 - A: monitors threads que esperam
 - Q: Ao fazer gossip, temos que enviar, para além do vector clock, também o log sempre? Não podemos esperar por uma resposta da outra replica a dizer quantas operações quer e apenas mandar essas? E como sabemos a ordem pela qual foram efetuadas, ou isso não é importante?
 - A: temos uma lista de gossips recebidos para cada server e só mandamos o que estimamos que ele ainda não tenha
 - Q: Como é que verificamos que um update é repetido? Pelo timestamp que ele tem guardado em si?
 - A: para saber se podemos fazer um update, compara com o value timestamp
-
-#### add new questions here:
 - Q: Com que frequência é que se vê o log de updates pendentes? Ao receber um pedido novo?
 - A: Primeiro implementação ingénua (espera ativa), depois com tempo implementar monitors.
 - Q: Qual a diferença entre o replica timestamp e o value timestamp
 - A: Replica timestamp representa updates recebidas por front-ends diretamente para o índice da réplica, e updates propagadas por outras réplicas para os outros índices. Value timestamp representa as operações feitas, no mesmo esquema. 
-- Q: Com que frequência é que se faz gossip? De x em x tempo? Podemos ter um bit a dizer se entretanto houve alguma alteração?
+- Q: Com que frequência é que se faz gossip? De x em x tempo?
 - A: Faz-se na linha de comandos, pelo admin
+- Q: É preciso ir apagando operações do log à medida que se for sabendo que todas as outras réplicas já os fizeram? (790 coulouris, ponto 3)
+- A: replicaTS sempre é atualizada quando se recebem gossips
 - Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à queue e o state verifica de forma independente?
 - A:
-- Q: É preciso ir apagando operações do log à medida que se for sabendo que todas as outras réplicas já os fizeram? (790 coulouris, ponto 3)
-
-- A: replicaTS sempre é atualizada quando se recebem gossips
+- Q: Admin não precisa de timestamps, certo?
+- A: 
+- Q: O que é que acontece quando fazemos gossip de um server para um outro que esteja inativo?
+- A: 
+- Q: Nós removemos completamente tudo o que estava relacionado com a operação delete. Fizemos bem?
+- A:
+- Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
+- A: 

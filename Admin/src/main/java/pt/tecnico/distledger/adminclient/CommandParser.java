@@ -82,9 +82,9 @@ public class CommandParser {
         }
     }
 
-    private void debug(String debugMsg) {
+    private void debug(String message) {
         if (this.debug)
-            System.err.println("[DEBUG] " + debugMsg);
+            System.err.println("[DEBUG] " + message);
     }
 
     private boolean lookup(String name, String role) {
@@ -110,7 +110,7 @@ public class CommandParser {
         return true;
     }
 
-    private void activate(String line){
+    private void activate(String line) {
         String role = lineParse(line);
         if (role == null)
             return;
@@ -128,7 +128,7 @@ public class CommandParser {
         System.out.println(response);
     }
 
-    private void deactivate(String line){
+    private void deactivate(String line) {
         String role = lineParse(line);
         if (role == null)
             return;
@@ -153,7 +153,7 @@ public class CommandParser {
         debug("> Getting ledger state of server with role " + role + "...");
         if (!adminServices.containsKey(role)) {
             if (!this.lookup("DistLedger", role)) {
-                debug("NOK: No server with given role available to handle request");
+                debug("NOK: no server with given role available to handle request");
                 System.err.println("No server available");
                 return;
             }

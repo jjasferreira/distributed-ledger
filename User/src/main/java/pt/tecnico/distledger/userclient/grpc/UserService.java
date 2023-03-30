@@ -36,14 +36,6 @@ public class UserService {
         return response.getTSList();
     }
 
-    public String deleteAccount(String username) {
-        DeleteAccountRequest request = DeleteAccountRequest.newBuilder()
-                .setUserId(username)
-                .build();
-        DeleteAccountResponse response = stub.deleteAccount(request);
-        return response.toString();
-    }
-
     public BalanceInfo balance(String username, List<Integer> timestamp) {
         BalanceRequest request = BalanceRequest.newBuilder()
                 .setUserId(username)

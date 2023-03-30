@@ -6,6 +6,7 @@ import pt.tecnico.distledger.adminclient.grpc.NamingServerService;
 public class AdminClientMain {
 
     private static final String NAMING_HOST = "localhost";
+
     private static final int NAMING_PORT = 5001;
 
     private static final boolean debug = (System.getProperty("debug") != null);
@@ -19,4 +20,5 @@ public class AdminClientMain {
         CommandParser parser = new CommandParser(debug, namingServerService);
         parser.parseInput();
     }
+
 }

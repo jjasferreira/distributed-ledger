@@ -45,8 +45,7 @@ public class ServerState {
         this.active = true;
         this.ledger = new ArrayList<>();
         this.accounts = new HashMap<>();
-        if (role.equals("A"))
-            this.setCrossServerService();
+        this.setCrossServerService();
         accounts.put("broker", 1000);
 
     }
@@ -81,26 +80,21 @@ public class ServerState {
     }
 
     private boolean setCrossServerService() {
+        // TODO: change this function
         // Returns true if secondary server is found
         HashMap<String, String> servers = namingServerService.lookup(serviceName, "B");
-        if (servers.isEmpty()) {
+        if (servers.isEmpty())
             return false;
-        }
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
-            if (entry.getValue().equals("B")) {
+            if (entry.getValue().equals("B"))
                 this.crossServerService = new CrossServerService(entry.getKey());
-            }
         }
         return true;
     }
 
-    private void debug(String debugMsg) {
+    private void debug(String message) {
         if (this.debug)
-            System.err.println("[DEBUG] " + debugMsg);
-    }
-
-    public boolean isPrimaryServer() {
-        return role.equals("A");
+            System.err.println("[DEBUG] " + message);
     }
 
     public void activate() throws AlreadyActiveServerException {
@@ -135,7 +129,7 @@ public class ServerState {
         debug("OK");
     }
 
-    public List<Operation> getLedger() {
+    public List<Operation> getLedger() throws InactiveServerException {
         debug("> Getting ledger state...");
         activeLock.readLock().lock();
         try {
@@ -152,12 +146,8 @@ public class ServerState {
         }
     }
 
-    public void createAccount(String account) throws WrongServerRoleException, InactiveServerException, AlreadyExistingAccountException, NoSecondaryServerException {
+    public void createAccount(String account) throws InactiveServerException, AlreadyExistingAccountException {
         debug("> Creating account " + account + "...");
-        if (!isPrimaryServer()) {
-            debug("NOK: cannot do this on servers with role " + this.role);
-            throw new WrongServerRoleException(this.role);
-        }
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -172,16 +162,6 @@ public class ServerState {
                 accounts.put(account, 0);
                 CreateOp createOp = new CreateOp(account);
                 ledger.add(createOp);
-                // If there is no secondary server service and none can be found
-                if (crossServerService == null && !this.setCrossServerService())
-                    throw new NoSecondaryServerException();
-                // If propagation fails, we need to revert the state
-                if (!crossServerService.propagateState(createOp)) {
-                    debug("NOK: propagation failed, reverting state...");
-                    ledger.remove(createOp);
-                    accounts.remove(account);
-                    throw new NoSecondaryServerException();
-                }
             }
             debug("OK");
         } finally {
@@ -189,56 +169,10 @@ public class ServerState {
         }
     }
 
-    public void deleteAccount(String account) throws WrongServerRoleException, InactiveServerException, IsBrokerException, NonExistingAccountException, MoneyInAccountException, NoSecondaryServerException {
-        debug("> Deleting account " + account + "...");
-        if (!isPrimaryServer()) {
-            debug("NOK: cannot do this on servers with role " + this.role);
-            throw new WrongServerRoleException(this.role);
-        }
-        activeLock.readLock().lock();
-        try {
-            if (!active) {
-                debug("NOK: inactive server");
-                throw new InactiveServerException(this.role);
-            }
-            if (account.equals("broker")) {
-                debug("NOK: cannot delete the broker account");
-                throw new IsBrokerException();
-            }
-            synchronized (accounts) {
-                if (!accounts.containsKey(account)) {
-                    debug("NOK: " + account + " does not exist");
-                    throw new NonExistingAccountException(account);
-                }
-                int balance = accounts.get(account);
-                if (balance > 0) {
-                    debug("NOK: " + account + " still has money");
-                    throw new MoneyInAccountException(account);
-                }
-                accounts.remove(account);
-                DeleteOp deleteOp = new DeleteOp(account);
-                ledger.add(deleteOp);
-                // If there is no secondary server service and none can be found
-                if (crossServerService == null && !this.setCrossServerService())
-                    throw new NoSecondaryServerException();
-                // If propagation fails, we need to revert the state
-                if (!crossServerService.propagateState(deleteOp)) {
-                    debug("NOK: propagation failed, reverting state...");
-                    ledger.remove(deleteOp);
-                    accounts.put(account, balance);
-                    throw new NoSecondaryServerException();
-                }
-            }
-        } finally {
-            activeLock.readLock().unlock();
-        }
-        debug("OK");
-    }
-
     public int getBalance(String account) throws InactiveServerException, NonExistingAccountException {
         debug("> Getting balance of account " + account + "...");
-        activeLock.readLock().lock();
         int balance;
+        activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
@@ -258,12 +192,8 @@ public class ServerState {
         return balance;
     }
 
-    public void transferTo(String accountFrom, String accountTo, int amount) throws WrongServerRoleException, InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException, NoSecondaryServerException {
+    public void transferTo(String accountFrom, String accountTo, int amount) throws InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException {
         debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
-        if (!isPrimaryServer()) {
-            debug("NOK: cannot do this on servers with role " + this.role);
-            throw new WrongServerRoleException(this.role);
-        }
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -295,17 +225,6 @@ public class ServerState {
                 accounts.put(accountTo, accounts.get(accountTo) + amount);
                 TransferOp transferOp = new TransferOp(accountFrom, accountTo, amount);
                 ledger.add(transferOp);
-                // If there is no secondary server service and none can be found
-                if (crossServerService == null && !this.setCrossServerService())
-                    throw new NoSecondaryServerException();
-                // If propagation fails, we need to revert the state
-                if (!crossServerService.propagateState(transferOp)) {
-                    debug("NOK: propagation failed, reverting state...");
-                    ledger.remove(transferOp);
-                    accounts.put(accountFrom, accounts.get(accountFrom) + amount);
-                    accounts.put(accountTo, accounts.get(accountTo) - amount);
-                    throw new NoSecondaryServerException();
-                }
             }
         } finally {
             activeLock.readLock().unlock();
@@ -313,12 +232,8 @@ public class ServerState {
         debug("OK");
     }
 
-    public void receivePropagatedState(Operation op) throws InactiveServerException, WrongServerRoleException, UnknownOperationException {
+    public void receivePropagatedState(Operation op) throws InactiveServerException, UnknownOperationException {
         debug("> Receiving propagated state: " + op);
-        if (isPrimaryServer()) {
-            debug("NOK: cannot do this on servers with role " + this.role);
-            throw new WrongServerRoleException(this.role);
-        }
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -356,14 +271,16 @@ public class ServerState {
     }
 
     public void gossip() {
-        // TODO: implement gossip command (only for phase 3)
+        // TODO: implement gossip command
     }
 
     public void shutdownServices() {
         debug("> Shutting down services...");
         namingServerService.shutdownNow();
+        // TODO: change to delete all cross server services
         if (crossServerService != null)
             crossServerService.shutdownNow();
         debug("OK");
     }
+
 }

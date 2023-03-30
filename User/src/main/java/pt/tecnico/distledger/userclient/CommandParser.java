@@ -14,7 +14,6 @@ public class CommandParser {
 
     private static final String SPACE = " ";
     private static final String CREATE_ACCOUNT = "createAccount";
-    private static final String DELETE_ACCOUNT = "deleteAccount";
     private static final String TRANSFER_TO = "transferTo";
     private static final String BALANCE = "balance";
     private static final String HELP = "help";
@@ -48,10 +47,6 @@ public class CommandParser {
                 switch (cmd) {
                     case CREATE_ACCOUNT:
                         this.createAccount(line);
-                        break;
-
-                    case DELETE_ACCOUNT:
-                        this.deleteAccount(line);
                         break;
 
                     case TRANSFER_TO:

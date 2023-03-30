@@ -14,9 +14,11 @@ import java.io.IOException;
 public class ServerMain {
 
 	private static final String NAMING_HOST = "localhost";
+	
 	private static final int NAMING_PORT = 5001;
 
 	private static final String SERVICE_NAME = "DistLedger";
+	
 	private static final String SERVER_HOST = "localhost";
 
 	private static final boolean debug = (System.getProperty("debug") != null);
@@ -44,11 +46,6 @@ public class ServerMain {
 
 		if (port < 1024 || port > 65353) {
 			System.err.println("Port number must be between 1024 and 65563");
-			return;
-		}
-
-		if (!role.equals("A") && !role.equals("B")) {
-			System.err.println("Role must be either A or B");
 			return;
 		}
 

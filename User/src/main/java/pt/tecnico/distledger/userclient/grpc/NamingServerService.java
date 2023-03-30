@@ -22,7 +22,10 @@ public class NamingServerService {
     }
 
     public HashMap<String, String> lookup(String name, String role) {
-        LookupRequest request = LookupRequest.newBuilder().setServiceName(name).setRole(role).build();
+        LookupRequest request = LookupRequest.newBuilder()
+                .setServiceName(name)
+                .setRole(role)
+                .build();
         LookupResponse response = stub.lookup(request);
         HashMap<String, String> servers = new HashMap<>();
         for (Server server : response.getServers().getServerList())
