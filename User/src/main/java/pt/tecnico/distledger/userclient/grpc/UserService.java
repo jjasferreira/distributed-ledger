@@ -7,6 +7,7 @@ import pt.tecnico.distledger.userclient.BalanceInfo;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import java.util.List;
 
 public class UserService {
 

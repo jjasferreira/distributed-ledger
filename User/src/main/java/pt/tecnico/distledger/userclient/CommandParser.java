@@ -86,15 +86,18 @@ public class CommandParser {
             System.err.println("[DEBUG] " + message);
     }
 
-    private void updateLocalTimestamp(List<Integer> newTS) {
-        debug("OK: " + prevTS + " --> " + newTS);
+    public void updateLocalTimestamp(List<Integer> newTS) {
         // Create a new list and copy the elements from newTS
         List<Integer> copiedTS = new ArrayList<>(newTS);
         int sizeTS = copiedTS.size();
+        // If the size of the newTS is greater than the size of prevTS, add null to prevTS
+        while (sizeTS > prevTS.size()) {
+            prevTS.add(null);
+        }
         for (int i = 0; i < sizeTS; i++) {
             // Update the element in prevTS with the value from newTS if it is greater
             if (prevTS.get(i) == null || copiedTS.get(i) > prevTS.get(i))
-                prevTS.set(i, copiedTS.get(i));
+            prevTS.set(i, copiedTS.get(i));
         }
     }
 

@@ -13,7 +13,7 @@ DISTLEDGER/REPLICAMANAGER?:
     
     UPDATE FUNCTION:
     lookup
-    se não tiver crossserverService para algum, adiciona-o
+    se não tiver crossServerService para algum, adiciona-o
 
 
     private int replicaId;
@@ -66,33 +66,52 @@ DISTLEDGER/REPLICAMANAGER?:
         }
 ```
 
+---
+
+# IDEIAS DE IMPLEMENTAÇÃO:
+
+- Cada vez que um servidor se regista no naming server, mada uma mensagem "greet" a todos os outros, para que possam atualizar os timestamps.
+  - Alternativamente, o naming server manda uma notificação a todos os outros servidores quando um novo servidor se regista.
+  - O naming server manda também no RegisterReply o número de registo (índice no timestamp) do servidor que se registou.
+
 ---	
 
 ### QUESTIONS:
 
 - Q: Replica Manager é uma nova classe?
 - A: Não, o stub em si é o frontend para as replicas
+
 - Q: É suposto termos vários métodos de operações de escrita em execução à espera que o valueTS seja atualizado para acabarem de correr ou saímos da função e fazemos essa verificação a cada update? O blockingStub tem alguma coisa a ver com isto?
-- A: monitors threads que esperam
+- A: Primeiro implementação ingénua (espera ativa), depois com tempo implementar monitors. (stor). Diz no livro que é quando recebemos uma propagação de estado que vamos verificar se as updates no log podem ser feitas. 
+
 - Q: Ao fazer gossip, temos que enviar, para além do vector clock, também o log sempre? Não podemos esperar por uma resposta da outra replica a dizer quantas operações quer e apenas mandar essas? E como sabemos a ordem pela qual foram efetuadas, ou isso não é importante?
-- A: temos uma lista de gossips recebidos para cada server e só mandamos o que estimamos que ele ainda não tenha
+- A: temos uma lista de gossips recebidos para cada server e só mandamos o que estimamos que ele ainda não tenha.
+- A (melhor): Vamos apagando do update log (ledger) as operações que já sabemos que foram feitas em todas as réplicas. Na executed operation table, guardamos todas as que foram feitas naquela réplica.
+
 - Q: Como é que verificamos que um update é repetido? Pelo timestamp que ele tem guardado em si?
 - A: para saber se podemos fazer um update, compara com o value timestamp
-- Q: Com que frequência é que se vê o log de updates pendentes? Ao receber um pedido novo?
-- A: Primeiro implementação ingénua (espera ativa), depois com tempo implementar monitors.
+- A (melhor): O front-end manda um unique identifier, que é registado na executed-operation table. Se o front-end receber um pedido com um unique identifier que já está na executed-operation table, ele ignora o pedido. 
+
 - Q: Qual a diferença entre o replica timestamp e o value timestamp
-- A: Replica timestamp representa updates recebidas por front-ends diretamente para o índice da réplica, e updates propagadas por outras réplicas para os outros índices. Value timestamp representa as operações feitas, no mesmo esquema. 
+- A: Replica timestamp representa updates recebidas por front-ends diretamente para o índice da réplica, e updates propagadas por outras réplicas para os outros índices. Value timestamp representa as operações feitas, no mesmo esquema. Value timestamp é merged quando uma update é aplicada.
+
 - Q: Com que frequência é que se faz gossip? De x em x tempo?
 - A: Faz-se na linha de comandos, pelo admin
+
 - Q: É preciso ir apagando operações do log à medida que se for sabendo que todas as outras réplicas já os fizeram? (790 coulouris, ponto 3)
-- A: replicaTS sempre é atualizada quando se recebem gossips
-- Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à queue e o state verifica de forma independente?
+- A: replicaTS sempre é atualizada quando se recebem gossips (o stor não respondeu bem a isto lol). Vamos assumir que sim.
+
+- Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à ledger e o state verifica de forma independente?
 - A:
+
 - Q: Admin não precisa de timestamps, certo?
 - A: 
+
 - Q: O que é que acontece quando fazemos gossip de um server para um outro que esteja inativo?
-- A: 
+- A:
+
 - Q: Nós removemos completamente tudo o que estava relacionado com a operação delete. Fizemos bem?
 - A:
+
 - Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
 - A: 

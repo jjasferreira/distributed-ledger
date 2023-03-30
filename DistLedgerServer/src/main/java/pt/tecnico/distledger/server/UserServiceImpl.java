@@ -8,6 +8,8 @@ import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.*;
 
+import java.util.List;
+
 
 public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
