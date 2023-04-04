@@ -2,6 +2,7 @@ package pt.tecnico.distledger.server;
 
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.exception.*;
+import pt.tecnico.distledger.server.vectorclock.VectorClock;
 import pt.ulisboa.tecnico.distledger.contract.user.UserServiceGrpc;
 import pt.ulisboa.tecnico.distledger.contract.user.UserDistLedger.*;
 
@@ -21,6 +22,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
+        /*
         String username = request.getUserId();
         List<Integer> prevTS = request.getPrevTS();
         try {
@@ -38,18 +40,18 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
+        */
     }
 
     @Override
     public void balance(BalanceRequest request, StreamObserver<BalanceResponse> responseObserver) {
         String username = request.getUserId();
-        List<Integer> prevTS = request.getPrevTS();
+        List<Integer> prevTS = request.getPrevTSList();
         try {
-            int balance = state.getBalance(username, prevTS);
-            List<Integer> newTS = state.getValueTS();
+            int balance = state.getBalance(username, new VectorClock(prevTS));
             BalanceResponse response = BalanceResponse.newBuilder()
                     .setValue(balance)
-                    .setValueTS(newTS)
+                    .addAllValueTS(state.getValueTimestamp())
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -65,6 +67,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
+        /*
         String from = request.getAccountFrom();
         String to = request.getAccountTo();
         int amount = request.getAmount();
@@ -84,6 +87,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
+         */
     }
 
 }

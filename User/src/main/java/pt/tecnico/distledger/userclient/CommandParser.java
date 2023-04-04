@@ -7,6 +7,7 @@ import io.grpc.StatusRuntimeException;
 import java.util.Scanner;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Collections;
 import java.util.ArrayList;
 
 
@@ -30,7 +31,7 @@ public class CommandParser {
     public CommandParser(boolean debug, NamingServerService namingServerService) {
         this.debug = debug;
         this.namingServerService = namingServerService;
-        this.prevTS = new ArrayList<>();
+        this.prevTS = new ArrayList<>(Collections.nCopies(5, 0)); // 5 servers max
     }
 
     void parseInput() {
@@ -87,21 +88,20 @@ public class CommandParser {
     }
 
     public void updateLocalTimestamp(List<Integer> newTS) {
+        debug("OK:" + this.prevTS + "-->" + newTS);
         // Create a new list and copy the elements from newTS
         List<Integer> copiedTS = new ArrayList<>(newTS);
         int sizeTS = copiedTS.size();
-        // If the size of the newTS is greater than the size of prevTS, add null to prevTS
-        while (sizeTS > prevTS.size()) {
-            prevTS.add(null);
-        }
         for (int i = 0; i < sizeTS; i++) {
             // Update the element in prevTS with the value from newTS if it is greater
-            if (prevTS.get(i) == null || copiedTS.get(i) > prevTS.get(i))
-            prevTS.set(i, copiedTS.get(i));
+            if (copiedTS.get(i) > prevTS.get(i))
+                this.prevTS.set(i, copiedTS.get(i));
         }
+        debug("OK: updated local timestamp to " + this.prevTS);
     }
 
     private boolean lookup(String name, String role) {
+        // Lookup for servers with the given service and role. Returns true if a server with the given role is found
         debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
         if (servers.isEmpty()) {
@@ -109,19 +109,15 @@ public class CommandParser {
             return false;
         }
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
-            if (!userServices.containsKey("A") && entry.getValue().equals("A")) {
-                String[] address = entry.getKey().split(":", 2);
-                UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
-                this.userServices.put("A", userService);
-            }
-            if (!userServices.containsKey("B") && entry.getValue().equals("B")) {
-                String[] address = entry.getKey().split(":", 2);
-                UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
-                this.userServices.put("B", userService);
-            }
+            String[] address = entry.getKey().split(":", 2);
+            UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
+            this.userServices.put(entry.getValue(), userService);
         }
-        debug("OK");
-        return true;
+        if (this.userServices.containsKey(role)) {
+            debug("OK: found server with role " + role);
+            return true;
+        }
+        return false;
     }
 
     private void createAccount(String line) {

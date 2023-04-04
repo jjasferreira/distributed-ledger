@@ -1,6 +1,7 @@
 package pt.tecnico.distledger.userclient;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 public class BalanceInfo {
@@ -11,7 +12,7 @@ public class BalanceInfo {
 
     public BalanceInfo(int value, List<Integer> valueTS) {
         this.value = value;
-        this.valueTS = List<Integer>(valueTS);
+        this.valueTS = valueTS.stream().collect(Collectors.toList());
     }
 
     public int getValue() {

@@ -68,13 +68,16 @@ DISTLEDGER/REPLICAMANAGER?:
 
 ---
 
-# IDEIAS DE IMPLEMENTAÇÃO:
+### IDEIAS DE IMPLEMENTAÇÃO:
 
 - Cada vez que um servidor se regista no naming server, mada uma mensagem "greet" a todos os outros, para que possam atualizar os timestamps.
   - Alternativamente, o naming server manda uma notificação a todos os outros servidores quando um novo servidor se regista.
   - O naming server manda também no RegisterReply o número de registo (índice no timestamp) do servidor que se registou.
 
 ---	
+
+### TODO:
+- Naming server rejeita sexto servidor a registar
 
 ### QUESTIONS:
 
@@ -102,16 +105,16 @@ DISTLEDGER/REPLICAMANAGER?:
 - A: replicaTS sempre é atualizada quando se recebem gossips (o stor não respondeu bem a isto lol). Vamos assumir que sim.
 
 - Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à ledger e o state verifica de forma independente?
-- A:
+- A: Tanto faz. Pode ter uma thread diferente para ver a ledger e fazer as operações.
 
 - Q: Admin não precisa de timestamps, certo?
-- A: 
+- A: Não.
 
 - Q: O que é que acontece quando fazemos gossip de um server para um outro que esteja inativo?
-- A:
+- A: Dá algum erro (igual à 2a entrega)
 
 - Q: Nós removemos completamente tudo o que estava relacionado com a operação delete. Fizemos bem?
-- A:
+- A: Sim, é indiferente
 
 - Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
-- A: 
+- A: NamingServer responde com o índice do server que se registou

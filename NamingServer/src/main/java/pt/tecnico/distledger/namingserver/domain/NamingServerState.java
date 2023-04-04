@@ -23,11 +23,12 @@ public class NamingServerState {
     }
 
     // register: Registers a new server in a service of the naming server list of services.
-    public void register(String name, String role, String address) throws AlreadyRegisteredAddressException, AlreadyRegisteredRoleException {
+    public Integer register(String name, String role, String address) throws AlreadyRegisteredAddressException, AlreadyRegisteredRoleException {
         debug("> Registering server " + address + " with role " + role + " to the service " + name + "...");
         synchronized (services) {
             ServiceEntry service = services.get(name);
             // If the service exists, check if the role or address is already registered
+            int index = 0;
             if (service != null) {
                 for (ServerEntry server : service.getServers()) {
                     if (server.getAddress().equals(address)) {
@@ -38,6 +39,7 @@ public class NamingServerState {
                         debug("NOK: role " + role + " already registered for service " + name);
                         throw new AlreadyRegisteredRoleException(role, name);
                     }
+                    index++;
                 }
             } else { // If the service does not exist, create it
                 service = new ServiceEntry(name);
@@ -45,8 +47,9 @@ public class NamingServerState {
             }
             ServerEntry server = new ServerEntry(role, address);
             service.addServer(server);
+            debug("OK");
+            return index;
         }
-        debug("OK");
     }
 
     // lookup: Returns a list containing servers of a specific service and role.

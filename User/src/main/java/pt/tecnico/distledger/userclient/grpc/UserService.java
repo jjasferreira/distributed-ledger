@@ -31,7 +31,7 @@ public class UserService {
     public List<Integer> createAccount(String username, List<Integer> timestamp) {
         CreateAccountRequest request = CreateAccountRequest.newBuilder()
                 .setUserId(username)
-                .setPrevTS(timestamp)
+                .addAllPrevTS(timestamp)
                 .build();
         CreateAccountResponse response = stub.createAccount(request);
         return response.getTSList();
@@ -40,7 +40,7 @@ public class UserService {
     public BalanceInfo balance(String username, List<Integer> timestamp) {
         BalanceRequest request = BalanceRequest.newBuilder()
                 .setUserId(username)
-                .setPrevTS(timestamp)
+                .addAllPrevTS(timestamp)
                 .build();
         BalanceResponse response = stub.balance(request);
         Integer value = response.getValue();
@@ -53,7 +53,7 @@ public class UserService {
                 .setAccountFrom(from)
                 .setAccountTo(to)
                 .setAmount(amount)
-                .setPrevTS(timestamp)
+                .addAllPrevTS(timestamp)
                 .build();
         TransferToResponse response = stub.transferTo(request);
         return response.getTSList();

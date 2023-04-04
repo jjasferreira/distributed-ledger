@@ -26,8 +26,8 @@ public class NamingServerServiceImpl extends NamingServerServiceGrpc.NamingServe
         String role = request.getRole();
         String address = request.getAddress();
         try {
-            state.register(name, role, address);
-            RegisterResponse response = RegisterResponse.newBuilder().build();
+            int index = state.register(name, role, address);
+            RegisterResponse response = RegisterResponse.newBuilder().setIndex(index).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (AlreadyRegisteredAddressException | AlreadyRegisteredRoleException e) {

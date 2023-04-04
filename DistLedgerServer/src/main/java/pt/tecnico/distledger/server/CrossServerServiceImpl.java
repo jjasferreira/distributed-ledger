@@ -26,6 +26,7 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
 
     @Override
     public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
+        /*
         LedgerState ledgerState = request.getState();
         try {
             for (DistLedgerCommonDefinitions.Operation op : ledgerState.getLedgerList()) {
@@ -53,6 +54,7 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
+        */
     }
 
 }

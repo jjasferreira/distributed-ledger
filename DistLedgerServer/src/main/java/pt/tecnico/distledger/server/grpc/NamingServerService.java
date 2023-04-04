@@ -21,10 +21,10 @@ public class NamingServerService {
         stub = NamingServerServiceGrpc.newBlockingStub(channel);
     }
 
-    public String register(String name, String role, String address) {
+    public Integer register(String name, String role, String address) {
         RegisterRequest request = RegisterRequest.newBuilder().setServiceName(name).setRole(role).setAddress(address).build();
         RegisterResponse response = stub.register(request);
-        return response.toString();
+        return response.getIndex();
     }
 
     public HashMap<String, String> lookup(String name, String role) {

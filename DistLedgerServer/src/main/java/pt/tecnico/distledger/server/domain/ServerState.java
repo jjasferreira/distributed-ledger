@@ -6,6 +6,7 @@ import pt.tecnico.distledger.server.grpc.NamingServerService;
 import pt.tecnico.distledger.server.grpc.CrossServerService;
 
 import io.grpc.StatusRuntimeException;
+import pt.tecnico.distledger.server.vectorclock.VectorClock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +32,14 @@ public class ServerState {
 
     private final NamingServerService namingServerService;
 
-    private CrossServerService crossServerService;
+    // table containing the replica's own timestamp and the timestamps for the other servers as per the last gossip message
+    private HashMap<String, VectorClock> timestampTable;
+
+    private VectorClock valueTimestamp;
+
+    private HashMap<String, CrossServerService> crossServerServices;
+
+    private HashMap<String, Integer> roleIndexes;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
     private final ReadWriteLock activeLock = new ReentrantReadWriteLock();
@@ -45,7 +53,10 @@ public class ServerState {
         this.active = true;
         this.ledger = new ArrayList<>();
         this.accounts = new HashMap<>();
-        this.setCrossServerService();
+        this.setCrossServerServices();
+        this.timestampTable = new HashMap<>();
+        this.timestampTable.put(this.role, new VectorClock(List.of(0,0,0)));
+        this.valueTimestamp = new VectorClock(List.of(0,0,0));
         accounts.put("broker", 1000);
 
     }
@@ -53,7 +64,8 @@ public class ServerState {
     public boolean registerToNamingServer(String name, String role, String address) {
         debug("> Registering server to naming server...");
         try {
-            namingServerService.register(name, role, address);
+            int replicaIndex = namingServerService.register(name, role, address);
+            this.roleIndexes.put(role, replicaIndex);
             debug("OK");
             System.out.println("Server registered to naming server");
             return true;
@@ -79,15 +91,15 @@ public class ServerState {
         }
     }
 
-    private boolean setCrossServerService() {
+    private boolean setCrossServerServices() {
         // TODO: change this function
         // Returns true if secondary server is found
-        HashMap<String, String> servers = namingServerService.lookup(serviceName, "B");
+        HashMap<String, String> servers = namingServerService.lookup(serviceName, "");
         if (servers.isEmpty())
             return false;
+        // adds all servers to crossServerServices
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
-            if (entry.getValue().equals("B"))
-                this.crossServerService = new CrossServerService(entry.getKey());
+            this.crossServerServices.put(entry.getKey(), new CrossServerService(entry.getKey()));
         }
         return true;
     }
@@ -169,7 +181,7 @@ public class ServerState {
         }
     }
 
-    public int getBalance(String account) throws InactiveServerException, NonExistingAccountException {
+    public int getBalance(String account, VectorClock prevTS) throws InactiveServerException, NonExistingAccountException, InvalidTimestampException {
         debug("> Getting balance of account " + account + "...");
         int balance;
         activeLock.readLock().lock();
@@ -178,12 +190,17 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            synchronized (accounts) {
-                if (!accounts.containsKey(account)) {
-                    debug("NOK: " + account + " does not exist");
-                    throw new NonExistingAccountException(account);
+            // if valueTS >= prevTS, then the value is valid
+            if (this.valueTimestamp.compareTo(prevTS) >= 0) {
+                synchronized (accounts) {
+                    if (!accounts.containsKey(account)) {
+                        debug("NOK: " + account + " does not exist");
+                        throw new NonExistingAccountException(account);
+                    }
+                    balance = accounts.get(account);
                 }
-                balance = accounts.get(account);
+            } else {
+                throw new InvalidTimestampException(prevTS.toString());
             }
         } finally {
             activeLock.readLock().unlock();
@@ -278,9 +295,14 @@ public class ServerState {
         debug("> Shutting down services...");
         namingServerService.shutdownNow();
         // TODO: change to delete all cross server services
-        if (crossServerService != null)
-            crossServerService.shutdownNow();
+        for (CrossServerService crossServerService : crossServerServices.values())
+            if (crossServerService != null)
+                crossServerService.shutdownNow();
         debug("OK");
+    }
+
+    public List<Integer> getValueTimestamp() {
+        return this.valueTimestamp.toList();
     }
 
 }
