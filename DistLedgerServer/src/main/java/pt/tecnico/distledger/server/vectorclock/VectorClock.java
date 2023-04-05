@@ -37,7 +37,7 @@ public class VectorClock implements Comparable<VectorClock> {
 
     @Override
     public int compareTo(VectorClock other) {
-        // Returns 1 if this is greater than other, 0 if they are equal, -1 if other is greater than this
+        // Returns 1 if this is greater than other, 0 if they are incomparable, -1 if other is greater than this
         List<Integer> otherClock = other.getClock();
         List<Integer> thisClock = this.getClock();
 

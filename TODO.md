@@ -77,7 +77,7 @@ DISTLEDGER/REPLICAMANAGER?:
 ---	
 
 ### TODO:
-- Naming server rejeita sexto servidor a registar
+- Naming server rejeita quarto servidor a registar
 
 ### QUESTIONS:
 
@@ -89,7 +89,6 @@ DISTLEDGER/REPLICAMANAGER?:
 
 - Q: Ao fazer gossip, temos que enviar, para além do vector clock, também o log sempre? Não podemos esperar por uma resposta da outra replica a dizer quantas operações quer e apenas mandar essas? E como sabemos a ordem pela qual foram efetuadas, ou isso não é importante?
 - A: temos uma lista de gossips recebidos para cada server e só mandamos o que estimamos que ele ainda não tenha.
-- A (melhor): Vamos apagando do update log (ledger) as operações que já sabemos que foram feitas em todas as réplicas. Na executed operation table, guardamos todas as que foram feitas naquela réplica.
 
 - Q: Como é que verificamos que um update é repetido? Pelo timestamp que ele tem guardado em si?
 - A: para saber se podemos fazer um update, compara com o value timestamp
@@ -118,3 +117,43 @@ DISTLEDGER/REPLICAMANAGER?:
 
 - Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
 - A: NamingServer responde com o índice do server que se registou
+
+- Q: Gossip funciona quando servidor está desativado?
+- A: 
+
+Falta:
+- createAccount e transferTo
+	- atualiza ReplicaTs
+	- ao guardar na ledger, guarda ```(índice_replica, ts_update, operation_type, prevTS)```, em que prevTS é o timestamp que o cliente manda, e ts_update é igual mas com o valor na posição índice_replica incrementado (#TODO mudar classe operation)
+	- se prevTS <= valueTS então executa e põe na ledger de operações estáveis
+		- atualiza valueTS
+	- cc. coloca na das operações instáveis
+
+- propagateState - A manda a sua ledger a B
+	- lado do A
+		- A encontra o replica timestamp do B na sua timestamp table
+		- percorre as suas ledgers, primeiro a estável e depois a instável
+		- põe numa ledger temporária as operações por ordem, se 
+	- lado do B
+		- B recebe ledger e replica timestamp da A
+		- B atualiza timestamp table com o timestamp da A que acabou de receber
+		- faz merge do replica timestamp do B com o do A
+		- percorre a ledger da A e adiciona tudo ao log de operações instáveis (por ordem, usar o comparator que o vector clock implementa, não adiciona uma operação se a lista de operações já tiver o update_ts)
+		- percorre de novo a ledger e compara prevTS com o seu valueTS. Se prevTS <= valueTS, pode executar, e faz merge de valueTS com o updateTS.
+		- manda confirmação
+
+# TODO
+- Alterar operations
+- Adicionar ao state ledgers de operações estáveis e instáveis
+- Testar num ficheiro à parte se o comparator do vector state está a funcionar e listas ordenadas com base nisso. - João
+- implementar createAccount 
+	 - [ ] corrigir UserServiceImplementation
+	 - [ ] lógica no serverState
+- implementar transferTo
+	 - [ ] corrigir UserServiceImplementation
+	 - [ ] lógica no serverState
+- implementar o propagateState
+	- [ ] crossServerServiceImplementation
+	- [ ] crossServerService
+	- [ ] função gossip
+Testar tudo :)

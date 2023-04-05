@@ -31,7 +31,7 @@ public class CommandParser {
     public CommandParser(boolean debug, NamingServerService namingServerService) {
         this.debug = debug;
         this.namingServerService = namingServerService;
-        this.prevTS = new ArrayList<>(Collections.nCopies(5, 0)); // 5 servers max
+        this.prevTS = new ArrayList<>(Collections.nCopies(3, 0)); // 3 servers max
     }
 
     void parseInput() {
