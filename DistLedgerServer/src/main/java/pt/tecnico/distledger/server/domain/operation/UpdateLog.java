@@ -36,4 +36,8 @@ public class UpdateLog {
     public List<Operation> getOperations() {
         return operations;
     }
+
+    public void remove(int index) {
+        operations.remove(index);
+    }
 }

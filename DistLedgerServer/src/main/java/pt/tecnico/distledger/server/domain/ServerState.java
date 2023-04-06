@@ -172,7 +172,7 @@ public class ServerState {
         }
     }
 
-    public void createAccount(String account) throws InactiveServerException, AlreadyExistingAccountException {
+    public VectorClock createAccount(String account, VectorClock prevTS) throws InactiveServerException, AlreadyExistingAccountException {
         debug("> Creating account " + account + "...");
         activeLock.readLock().lock();
         try {
@@ -223,7 +223,7 @@ public class ServerState {
         return balance;
     }
 
-    public void transferTo(String accountFrom, String accountTo, int amount) throws InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException {
+    public VectorClock transferTo(String accountFrom, String accountTo, int amount, VectorClock prevTS) throws InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException {
         debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
         activeLock.readLock().lock();
         try {

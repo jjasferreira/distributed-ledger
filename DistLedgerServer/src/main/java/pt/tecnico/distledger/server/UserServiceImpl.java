@@ -22,13 +22,13 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
-        /*
+
         String username = request.getUserId();
-        List<Integer> prevTS = request.getPrevTS();
+        List<Integer> prevTS = request.getPrevTSList();
         try {
-            List<Integer> newTS = state.createAccount(username, prevTS);
+            VectorClock newTS = state.createAccount(username, new VectorClock(prevTS));
             CreateAccountResponse response = CreateAccountResponse.newBuilder()
-                    .setTS(newTS)
+                    .addAllTS(newTS.toList())
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -40,7 +40,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
-        */
+
     }
 
     @Override
@@ -67,15 +67,14 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
     @Override
     public void transferTo(TransferToRequest request, StreamObserver<TransferToResponse> responseObserver) {
-        /*
         String from = request.getAccountFrom();
         String to = request.getAccountTo();
         int amount = request.getAmount();
-        List<Integer> prevTS = request.getPrevTS();
+        List<Integer> prevTS = request.getPrevTSList();
         try {
-            List<Integer> newTS = state.transferTo(from, to, amount, prevTS);
+            VectorClock newTS = state.transferTo(from, to, amount, new VectorClock(prevTS));
             TransferToResponse response = TransferToResponse.newBuilder()
-                    .setTS(newTS)
+                    .addAllTS(newTS.toList())
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -87,7 +86,6 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
-         */
     }
 
 }

@@ -147,10 +147,10 @@ Falta:
 - Adicionar ao state ledgers de operações estáveis e instáveis
 - Testar num ficheiro à parte se o comparator do vector state está a funcionar e listas ordenadas com base nisso. - João
 - implementar createAccount 
-	 - [ ] corrigir UserServiceImplementation
+	 - [X] corrigir UserServiceImplementation
 	 - [ ] lógica no serverState
 - implementar transferTo
-	 - [ ] corrigir UserServiceImplementation
+	 - [X] corrigir UserServiceImplementation
 	 - [ ] lógica no serverState
 - implementar o propagateState
 	- [ ] crossServerServiceImplementation
