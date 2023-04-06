@@ -20,7 +20,7 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
-    private static final NUM_SERVERS = 3;
+    private static final int NUM_SERVERS = 3;
 
     private final boolean debug;
 

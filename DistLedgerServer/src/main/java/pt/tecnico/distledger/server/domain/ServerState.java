@@ -7,8 +7,10 @@ import pt.tecnico.distledger.server.grpc.CrossServerService;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.server.vectorclock.VectorClock;
+import pt.tecnico.distledger.server.domain.operation.UpdateLog;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.HashMap;
 import java.util.concurrent.locks.*;
@@ -16,6 +18,7 @@ import java.util.concurrent.locks.*;
 
 public class ServerState {
 
+    private static final int LIST_SIZE = 3;
     private final List<Operation> ledger;
 
     private final HashMap<String, Integer> accounts;
@@ -35,11 +38,19 @@ public class ServerState {
     // table containing the replica's own timestamp and the timestamps for the other servers as per the last gossip message
     private HashMap<String, VectorClock> timestampTable;
 
+    // timestamp of the last value written to the ledger
     private VectorClock valueTimestamp;
 
     private HashMap<String, CrossServerService> crossServerServices;
 
+    // Map from role to replica index in the timestamps
     private HashMap<String, Integer> roleIndexes;
+
+    // Stable operation update log
+    private UpdateLog updateLog;
+
+    // Unstable operation update log
+    private UpdateLog unstableUpdateLog;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
     private final ReadWriteLock activeLock = new ReentrantReadWriteLock();
@@ -55,8 +66,11 @@ public class ServerState {
         this.accounts = new HashMap<>();
         this.setCrossServerServices();
         this.timestampTable = new HashMap<>();
-        this.timestampTable.put(this.role, new VectorClock(List.of(0,0,0)));
-        this.valueTimestamp = new VectorClock(List.of(0,0,0));
+        this.timestampTable.put(this.role, new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0))));
+        this.valueTimestamp = new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0)));
+        this.roleIndexes = new HashMap<>();
+        this.updateLog = new UpdateLog(true);
+        this.unstableUpdateLog = new UpdateLog(false);
         accounts.put("broker", 1000);
 
     }
@@ -190,8 +204,8 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            // if valueTS >= prevTS, then the value is valid
-            if (this.valueTimestamp.compareTo(prevTS) >= 0) {
+            // if prevTS <= valueTS , then the value is valid
+            if (prevTS.happensBefore(this.valueTimestamp)) {
                 synchronized (accounts) {
                     if (!accounts.containsKey(account)) {
                         debug("NOK: " + account + " does not exist");
