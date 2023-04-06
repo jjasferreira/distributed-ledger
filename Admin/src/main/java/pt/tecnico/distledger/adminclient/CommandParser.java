@@ -18,15 +18,18 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
+    private static final NUM_SERVERS = 3;
+
     private final boolean debug;
 
     private final NamingServerService namingServerService;
 
-    HashMap<String, AdminService> adminServices = new HashMap<>();
+    private HashMap<String, AdminService> adminServices;
 
     public CommandParser(boolean debug, NamingServerService namingServerService) {
         this.debug = debug;
         this.namingServerService = namingServerService;
+        this.adminServices = new HashMap<>();
     }
 
     void parseInput() {
@@ -63,9 +66,8 @@ public class CommandParser {
 
                     case EXIT:
                         namingServerService.shutdownNow();
-                        for (HashMap.Entry<String, AdminService> entry : adminServices.entrySet()) {
-                            entry.getValue().shutdownNow();
-                        }
+                        for (HashMap.Entry<String, AdminService> service : adminServices.entrySet())
+                            service.getValue().shutdownNow();
                         exit = true;
                         break;
 
@@ -88,26 +90,24 @@ public class CommandParser {
     }
 
     private boolean lookup(String name, String role) {
+        // Lookup for servers with the given service and role. Returns true if a server with the given role is found
         debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
+        this.adminServices.clear();
         if (servers.isEmpty()) {
             debug("NOK: no server found");
             return false;
         }
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
-            if (!adminServices.containsKey("A") && entry.getValue().equals("A")) {
-                String[] address = entry.getKey().split(":", 2);
-                AdminService adminService = new AdminService(address[0], Integer.parseInt(address[1]));
-                this.adminServices.put("A", adminService);
-            }
-            if (!adminServices.containsKey("B") && entry.getValue().equals("B")) {
-                String[] address = entry.getKey().split(":", 2);
-                AdminService adminService = new AdminService(address[0], Integer.parseInt(address[1]));
-                this.adminServices.put("B", adminService);
-            }
+            String[] address = entry.getKey().split(":", 2);
+            UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
+            this.userServices.put(entry.getValue(), userService);
         }
-        debug("OK");
-        return true;
+        if (this.userServices.containsKey(role)) {
+            debug("OK: found server with role " + role);
+            return true;
+        }
+        return false;
     }
 
     private void activate(String line) {
@@ -165,12 +165,26 @@ public class CommandParser {
     }
 
     private void gossip(String line) {
-        System.out.println("TODO: implement gossip command (only for phase 3)");
+        String role = lineParse(line);
+        if (role == null)
+            return;
+        debug("> Gossiping from server with role " + role + "...");
+        if (!adminServices.containsKey(role)) {
+            if (!this.lookup("DistLedger", role)) {
+                debug("NOK: no server with given role available to handle request");
+                System.err.println("No server available");
+                return;
+            }
+        }
+        String response = adminServices.get(role).gossip();
+        debug("OK");
+        System.out.println("OK");
+        System.out.println(response);
     }
 
-    private String lineParse(String line){
+    private String lineParse(String line) {
         String[] split = line.split(SPACE);
-        if (split.length != 2){
+        if (split.length != 2) {
             this.printUsage();
             debug("NOK: unexpected number of arguments");
             return null;

@@ -20,18 +20,21 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
+    private static final NUM_SERVERS = 3;
+
     private final boolean debug;
 
     private final NamingServerService namingServerService;
 
     private List<Integer> prevTS;
 
-    HashMap<String, UserService> userServices = new HashMap<>();
+    private HashMap<String, UserService> userServices;
 
     public CommandParser(boolean debug, NamingServerService namingServerService) {
         this.debug = debug;
         this.namingServerService = namingServerService;
-        this.prevTS = new ArrayList<>(Collections.nCopies(3, 0)); // 3 servers max
+        this.prevTS = new ArrayList<>(Collections.nCopies(NUM_SERVERS, 0));
+        this.userServices = new HashMap<>();
     }
 
     void parseInput() {
@@ -44,7 +47,7 @@ public class CommandParser {
             String line = scanner.nextLine().trim();
             String cmd = line.split(SPACE)[0];
 
-            try{
+            try {
                 switch (cmd) {
                     case CREATE_ACCOUNT:
                         this.createAccount(line);
@@ -104,14 +107,15 @@ public class CommandParser {
         // Lookup for servers with the given service and role. Returns true if a server with the given role is found
         debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
+        this.userServices.clear();
         if (servers.isEmpty()) {
             debug("NOK: no server found");
             return false;
         }
-        for (HashMap.Entry<String, String> entry : servers.entrySet()) {
-            String[] address = entry.getKey().split(":", 2);
+        for (HashMap.Entry<String, String> server : servers.entrySet()) {
+            String[] address = server.getKey().split(":", 2);
             UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
-            this.userServices.put(entry.getValue(), userService);
+            this.userServices.put(server.getValue(), userService);
         }
         if (this.userServices.containsKey(role)) {
             debug("OK: found server with role " + role);
