@@ -21,9 +21,10 @@ public class UpdateLog {
         int insertIndex = operations.size();
         for (int i = 0; i < operations.size(); i++) {
             Operation prevOp = operations.get(i);
-            if (op.getVectorClock().isConcurrent(prevOp.getVectorClock())) {
+            // TODO: is this ordered based on prevTS or based on updateTS?
+            if (op.getPrevTs().isConcurrent(prevOp.getPrevTs())) {
                 continue;
-            } else if (op.getVectorClock().happensBefore(prevOp.getVectorClock())) {
+            } else if (op.getPrevTs().happensBefore(prevOp.getPrevTs())) {
                 insertIndex = i;
                 break;
             } else {

@@ -18,7 +18,7 @@ public class CommandParser {
     private static final String HELP = "help";
     private static final String EXIT = "exit";
 
-    private static final NUM_SERVERS = 3;
+    private static final int NUM_SERVERS = 3;
 
     private final boolean debug;
 
@@ -100,10 +100,10 @@ public class CommandParser {
         }
         for (HashMap.Entry<String, String> entry : servers.entrySet()) {
             String[] address = entry.getKey().split(":", 2);
-            UserService userService = new UserService(address[0], Integer.parseInt(address[1]));
-            this.userServices.put(entry.getValue(), userService);
+            AdminService adminService = new AdminService(address[0], Integer.parseInt(address[1]));
+            this.adminServices.put(entry.getValue(), adminService);
         }
-        if (this.userServices.containsKey(role)) {
+        if (this.adminServices.containsKey(role)) {
             debug("OK: found server with role " + role);
             return true;
         }
@@ -165,6 +165,8 @@ public class CommandParser {
     }
 
     private void gossip(String line) {
+        /*
+    }
         String role = lineParse(line);
         if (role == null)
             return;
@@ -180,6 +182,7 @@ public class CommandParser {
         debug("OK");
         System.out.println("OK");
         System.out.println(response);
+        */
     }
 
     private String lineParse(String line) {

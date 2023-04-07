@@ -1,11 +1,13 @@
 package pt.tecnico.distledger.server.domain.operation;
 
+import pt.tecnico.distledger.server.vectorclock.VectorClock;
+
 public class TransferOp extends Operation {
     private String destAccount;
     private int amount;
 
-    public TransferOp(String fromAccount, String destAccount, int amount) {
-        super(fromAccount);
+    public TransferOp(String fromAccount, String destAccount, int amount, VectorClock prevTS, VectorClock updateTS, int replicaIndex) {
+        super(fromAccount, prevTS, updateTS, replicaIndex);
         this.destAccount = destAccount;
         this.amount = amount;
     }

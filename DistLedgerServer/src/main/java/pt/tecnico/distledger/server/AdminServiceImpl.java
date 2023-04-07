@@ -61,13 +61,13 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
         for (Operation op : ledger) {
             DistLedgerCommonDefinitions.Operation operation;
             if (op instanceof CreateOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(op.getAccount()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
             else if (op instanceof DeleteOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(op.getAccount()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
             else if (op instanceof TransferOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(op.getAccount()).setDestUserId(((TransferOp) op).getDestAccount()).setAmount(((TransferOp) op).getAmount()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(op.getAccount()).setDestUserId(((TransferOp) op).getDestAccount()).setAmount(((TransferOp) op).getAmount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
             else
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).setUserId(op.getAccount()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
             ledgerStateBuilder.addLedger(operation);
         }
         LedgerState ledgerState = ledgerStateBuilder.build();

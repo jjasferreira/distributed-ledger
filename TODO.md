@@ -148,12 +148,14 @@ Falta:
 - Testar num ficheiro à parte se o comparator do vector state está a funcionar e listas ordenadas com base nisso. - João
 - implementar createAccount 
 	 - [X] corrigir UserServiceImplementation
-	 - [ ] lógica no serverState
+	 - [X] lógica no serverState
 - implementar transferTo
 	 - [X] corrigir UserServiceImplementation
-	 - [ ] lógica no serverState
+	 - [X] lógica no serverState
 - implementar o propagateState
 	- [ ] crossServerServiceImplementation
 	- [ ] crossServerService
 	- [ ] função gossip
-Testar tudo :)
+- Testar tudo :)
+
+- Double check de verificação de exceções no state. Devem vir antes ou depois de lógica de timestamps/ledgers e afins?

@@ -15,11 +15,15 @@ public class VectorClock {
         return clock;
     }
 
-    public void setClock(List<Integer> clock) {
-        this.clock = clock;
+    public void setIndex(int index, int value) {
+        this.clock.set(index, value);
     }
 
-    public void incrementClock(int index) {
+    public int getIndex(int index) {
+        return this.clock.get(index);
+    }
+
+    public void increment(int index) {
         this.clock.set(index, this.clock.get(index) + 1);
     }
 
@@ -35,6 +39,10 @@ public class VectorClock {
 
     public boolean isConcurrent(VectorClock other) {
         return this.compareClocks(other) == EventOrdering.CONCURRENT;
+    }
+
+    public boolean isEqual(VectorClock other) {
+        return this.compareClocks(other) == EventOrdering.IDENTICAL;
     }
 
       /**
