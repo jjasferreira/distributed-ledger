@@ -47,4 +47,10 @@ public class AdminService {
         // A Channel should be shutdown before stopping the process.
 		channel.shutdownNow();
     }
+
+    public String gossip() {
+        GossipRequest request = GossipRequest.getDefaultInstance();
+        GossipResponse response = stub.gossip(request);
+        return response.toString();
+    }
 }
