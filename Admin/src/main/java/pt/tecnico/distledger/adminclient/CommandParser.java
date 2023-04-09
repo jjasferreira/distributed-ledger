@@ -165,18 +165,25 @@ public class CommandParser {
     }
 
     private void gossip(String line) {
-        String role = lineParse(line);
-        if (role == null)
+        String[] split = line.split(SPACE);
+        if (split.length != 3) {
+            this.printUsage();
+            debug("NOK: unexpected number of arguments");
             return;
-        debug("> Gossiping from server with role " + role + "...");
-        if (!adminServices.containsKey(role)) {
-            if (!this.lookup("DistLedger", role)) {
+        }
+        String roleFrom = split[1];
+        String roleTo = split[2];
+        if (roleFrom == null || roleTo == null)
+            return;
+        debug("> Gossiping from server with role " + roleFrom + "..." + " to server with role " + roleTo + "...");
+        if (!adminServices.containsKey(roleFrom) || !adminServices.containsKey(roleTo)) {
+            if (!this.lookup("DistLedger", roleFrom) || !this.lookup("DistLedger", roleTo)) {
                 debug("NOK: no server with given role available to handle request");
                 System.err.println("No server available");
                 return;
             }
         }
-        String response = adminServices.get(role).gossip();
+        String response = adminServices.get(roleFrom).gossip(roleTo);
         debug("OK");
         System.out.println("OK");
         System.out.println(response);

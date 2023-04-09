@@ -61,18 +61,32 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
         for (Operation op : ledger) {
             DistLedgerCommonDefinitions.Operation operation;
             if (op instanceof CreateOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
             else if (op instanceof DeleteOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
             else if (op instanceof TransferOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(op.getAccount()).setDestUserId(((TransferOp) op).getDestAccount()).setAmount(((TransferOp) op).getAmount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(op.getAccount()).setDestUserId(((TransferOp) op).getDestAccount()).setAmount(((TransferOp) op).getAmount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
             else
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTs().toList()).addAllTS(op.getUpdateTs().toList()).build();
+                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_UNSPECIFIED).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
             ledgerStateBuilder.addLedger(operation);
         }
         LedgerState ledgerState = ledgerStateBuilder.build();
         GetLedgerStateResponse response = GetLedgerStateResponse.newBuilder().setLedgerState(ledgerState).build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void gossip(GossipRequest request, StreamObserver<GossipResponse> responseObserver) {
+        try {
+            String role = request.getRole();
+            state.gossip(role);
+            GossipResponse response = GossipResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
+            e.printStackTrace();
+        }
     }
 }

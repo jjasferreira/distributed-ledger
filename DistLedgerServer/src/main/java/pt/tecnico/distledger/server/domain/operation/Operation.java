@@ -2,9 +2,6 @@ package pt.tecnico.distledger.server.domain.operation;
 
 import pt.tecnico.distledger.server.vectorclock.VectorClock;
 
-import java.util.ArrayList;
-import java.util.Vector;
-
 public class Operation {
     private String account;
 
@@ -29,11 +26,11 @@ public class Operation {
         this.account = account;
     }
 
-    public VectorClock getPrevTs() {
+    public VectorClock getPrevTS() {
         return new VectorClock(prevTS.getClock());
     }
 
-    public VectorClock getUpdateTs() {
+    public VectorClock getUpdateTS() {
         return new VectorClock(updateTS.getClock());
     }
 

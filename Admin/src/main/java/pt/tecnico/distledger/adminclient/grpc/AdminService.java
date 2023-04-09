@@ -48,8 +48,8 @@ public class AdminService {
 		channel.shutdownNow();
     }
 
-    public String gossip() {
-        GossipRequest request = GossipRequest.getDefaultInstance();
+    public String gossip(String roleTo) {
+        GossipRequest request = GossipRequest.newBuilder().setRole(roleTo).build();
         GossipResponse response = stub.gossip(request);
         return response.toString();
     }

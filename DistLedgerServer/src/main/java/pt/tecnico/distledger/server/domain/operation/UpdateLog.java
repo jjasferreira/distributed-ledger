@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // import vector clock
-import pt.tecnico.distledger.server.vectorclock.VectorClock;
+
 
 public class UpdateLog {
     // This class is used to store the operations in a sorted order. If i<j then operations[i] happened before operations[j] or they are concurrent.
@@ -17,14 +17,18 @@ public class UpdateLog {
         this.isStable = isStable;
     }
 
+    public UpdateLog() {
+        this(true);
+    }
+
     public void insert(Operation op) {
         int insertIndex = operations.size();
         for (int i = 0; i < operations.size(); i++) {
             Operation prevOp = operations.get(i);
             // TODO: is this ordered based on prevTS or based on updateTS?
-            if (op.getPrevTs().isConcurrent(prevOp.getPrevTs())) {
+            if (op.getPrevTS().isConcurrent(prevOp.getPrevTS())) {
                 continue;
-            } else if (op.getPrevTs().happensBefore(prevOp.getPrevTs())) {
+            } else if (op.getPrevTS().happensBefore(prevOp.getPrevTS())) {
                 insertIndex = i;
                 break;
             } else {

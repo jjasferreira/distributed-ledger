@@ -340,8 +340,57 @@ public class ServerState {
         */
     }
 
-    public void gossip() {
-        // TODO: implement gossip command
+    public void gossip(String role) { // TODO create new exceptions
+        debug("> Gossiping with " + role + "...");
+        activeLock.readLock().lock();
+        try {
+            if (!active) {
+                debug("NOK: inactive server");
+                return;
+            }
+            // if role cannot be found, lookup
+            if (!this.crossServerServices.containsKey(role)) {
+                this.setCrossServerServices();
+                if (!this.crossServerServices.containsKey(role)) {
+                    debug("NOK: " + role + " not found");
+                    // TODO throw exception
+                    return;
+                }
+            }
+            // get the cross server service
+            CrossServerService crossServerService = this.crossServerServices.get(role);
+            //get the other server's replicaTimestamp
+            VectorClock otherReplicaTimestamp = timestampTable.get(role);
+            //create temporary ledger (updateLog)
+            UpdateLog tempLedger = new UpdateLog();
+            // iterate through stable ledger operations
+            for (Operation op : ledger.getOperations()) {
+                // get the prevTS
+                VectorClock prevTS = op.getPrevTS();
+                //get the replicaIndex
+                int replicaIndex = op.getReplicaIndex();
+                // if the replicaIndex position of the replicaTimestamp is less than the replicaIndex position of the prevTS, add to the tempLedger
+                // this means that to the knowledge of the present replica, the other replica has not yet received any updates after the one indicated by timestamp[replicaIndex]
+                if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
+                    tempLedger.insert(op);
+                }
+            }
+            // iterate through unstable ledger operations
+            for (Operation op : unstableLedger.getOperations()) {
+                VectorClock prevTS = op.getPrevTS();
+                int replicaIndex = op.getReplicaIndex();
+                if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
+                    tempLedger.insert(op);
+                }
+            }
+            if (!crossServerService.propagateState(tempLedger.getOperations(), timestampTable.get(this.role).toList())) {
+                debug("NOK: gossiping with " + role + " failed");
+                // TODO throw exception
+                return;
+            }
+        } finally {
+            activeLock.readLock().unlock();
+        }
     }
 
     public void shutdownServices() {

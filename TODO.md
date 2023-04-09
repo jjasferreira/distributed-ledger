@@ -143,7 +143,6 @@ Falta:
 		- manda confirmação
 
 # TODO
-- Alterar operations
 - Adicionar ao state ledgers de operações estáveis e instáveis
 - Testar num ficheiro à parte se o comparator do vector state está a funcionar e listas ordenadas com base nisso. - João
 - implementar createAccount 
@@ -159,3 +158,7 @@ Falta:
 - Testar tudo :)
 
 - Double check de verificação de exceções no state. Devem vir antes ou depois de lógica de timestamps/ledgers e afins?
+
+- E se uma réplica for apagada/desativada? O que acontece às operações que já existiam na ledger?
+
+- Porque é que precisamos de separar em duas ledger as unstable operations e stable operations? Parece não nos oferecer nada de jeito
