@@ -20,10 +20,6 @@ public class ServerState {
 
     private static final int LIST_SIZE = 3;
 
-    // private final List<Operation> ledger;
-
-    private final HashMap<String, Integer> accounts;
-
     private final String serviceName;
 
     private final String role;
@@ -36,20 +32,22 @@ public class ServerState {
 
     private final NamingServerService namingServerService;
 
-    // table containing the replica's own timestamp and the timestamps for the other servers as per the last gossip message
-    private HashMap<String, VectorClock> timestampTable;
-
-    // timestamp of the last value written to the ledger
-    private VectorClock valueTimestamp;
-
     private HashMap<String, CrossServerService> crossServerServices;
 
-    // Map from role to replica index in the timestamps
-    private HashMap<String, Integer> roleIndexes;
+    // Map from account name to current balance
+    private final HashMap<String, Integer> accounts;
 
     // Stable operation update log
     private Ledger ledger;
 
+    // Timestamp of the last value written to the ledger
+    private VectorClock valueTS;
+
+    // Table containing the replica's own timestamp and the timestamps for the other servers as per the last gossip message
+    private HashMap<String, VectorClock> timestampTable;
+
+    // Map from role to replica index in the timestamps
+    private HashMap<String, Integer> roleIndexes;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
     private final ReadWriteLock activeLock = new ReentrantReadWriteLock();
@@ -61,15 +59,14 @@ public class ServerState {
         this.role = role;
         this.address = address;
         this.active = true;
-        this.ledger = new Ledger();
-        this.accounts = new HashMap<>();
         this.setCrossServerServices();
+        this.accounts = new HashMap<>();
+        this.accounts.put("broker", 1000);
+        this.ledger = new Ledger();
+        this.valueTS = new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0)));
         this.timestampTable = new HashMap<>();
         this.timestampTable.put(this.role, new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0))));
-        this.valueTimestamp = new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0)));
         this.roleIndexes = new HashMap<>();
-        accounts.put("broker", 1000);
-
     }
 
     public boolean registerToNamingServer(String name, String role, String address) {
@@ -103,15 +100,13 @@ public class ServerState {
     }
 
     private boolean setCrossServerServices() {
-        // TODO: change this function
-        // Returns true if secondary server is found
-        HashMap<String, String> servers = namingServerService.lookup(serviceName, "");
+        // Add all available servers to crossServerServices
+        HashMap<String, String> servers = namingServerService.lookup(this.serviceName, "");
+        this.crossServerServices.clear();
         if (servers.isEmpty())
             return false;
-        // adds all servers to crossServerServices
-        for (HashMap.Entry<String, String> entry : servers.entrySet()) {
-            this.crossServerServices.put(entry.getKey(), new CrossServerService(entry.getKey()));
-        }
+        for (HashMap.Entry<String, String> server : servers.entrySet())
+            this.crossServerServices.put(server.getKey(), new CrossServerService(server.getKey()));
         return true;
     }
 
@@ -121,7 +116,7 @@ public class ServerState {
     }
 
     public void activate() throws AlreadyActiveServerException {
-        debug("> Activating server...");
+        debug("> Receiving request to activate server...");
         activeLock.writeLock().lock();
         try {
             if (active) {
@@ -137,7 +132,7 @@ public class ServerState {
     }
 
     public void deactivate() throws AlreadyInactiveServerException {
-        debug("> Deactivating server...");
+        debug("> Receiving request to deactivate server...");
         activeLock.writeLock().lock();
         try {
             if (!active) {
@@ -153,7 +148,7 @@ public class ServerState {
     }
 
     public List<Operation> getLedger() throws InactiveServerException {
-        debug("> Getting ledger state...");
+        debug("> Receiving request to get ledger...");
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -162,7 +157,6 @@ public class ServerState {
             }
             synchronized (accounts) {
                 debug("OK");
-                // TODO how to return both active and inactive operations
                 return new ArrayList<>(ledger.getEveryOperation());
             }
         } finally {
@@ -171,7 +165,7 @@ public class ServerState {
     }
 
     public VectorClock createAccount(String account, VectorClock prevTS) throws InactiveServerException, AlreadyExistingAccountException {
-        debug("> Creating account " + account + "...");
+        debug("> Receiving request to create account " + account + "...");
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -179,32 +173,30 @@ public class ServerState {
                 throw new InactiveServerException(this.role);
             }
             synchronized (accounts) {
-                // increment replica timestamp
+                // Increment replicaTS, set updateTS to be equal to prevTS except for the replica index
                 int replicaIndex = this.roleIndexes.get(this.role);
-                this.timestampTable.get(this.role).increment(replicaIndex);
+                VectorClock replicaTS = this.timestampTable.get(this.role);
+                replicaTS.increment(replicaIndex);
                 VectorClock updateTS = new VectorClock(prevTS.toList());
-                // updateTS is equal to prevTS, with the value in the replica index set to the same as in the replica timestamp
-                updateTS.setIndex(replicaIndex, this.timestampTable.get(this.role).getIndex(replicaIndex));
-                //debug everything
+                updateTS.setIndex(replicaIndex, replicaTS.getIndex(replicaIndex));
                 CreateOp createOp = new CreateOp(account, prevTS, updateTS, replicaIndex);
-                debug("prevTS: " + prevTS + " updateTS: " + updateTS + " valueTS: " + this.valueTimestamp + " replicaTS: " + this.timestampTable.get(this.role).toString());
-                // if prevTS <= valueTS , then the value is valid
-                if (prevTS.happensBefore(this.valueTimestamp) || prevTS.isEqual(this.valueTimestamp)) {
+                debug("valueTS: " + this.valueTS + ", prevTS: " + prevTS + ", updateTS: " + updateTS + ", replicaTS: " + replicaTS);
+                // If prevTS <= valueTS , then the operation is stable
+                // TODO: change this to do only 1 check: if it doesnt happen after
+                if (prevTS.happensBefore(this.valueTS) || prevTS.isEqual(this.valueTS)) {
+                    debug("Creating account...");
                     if (accounts.containsKey(account)) {
                         debug("NOK: " + account + " already exists");
                         throw new AlreadyExistingAccountException(account);
                     }
-                    debug("Creating account " + account + "...");
                     accounts.put(account, 0);
                     ledger.insert(createOp, true);
-                    this.valueTimestamp.increment(replicaIndex);
-                    // display new valuetimestamp
-                    debug("New valueTS: " + this.valueTimestamp);
+                    this.valueTS.increment(replicaIndex);
                 } else {
-                    debug("Adding operation to unstable ledger...");
+                    debug("Adding unstable operation to ledger...");
                     ledger.insert(createOp, false);
                 }
-                debug("OK");
+                debug("OK, valueTS: " + this.valueTS);
                 return updateTS;
             }
         } finally {
@@ -213,7 +205,7 @@ public class ServerState {
     }
 
     public int getBalance(String account, VectorClock prevTS) throws InactiveServerException, NonExistingAccountException, InvalidTimestampException {
-        debug("> Getting balance of account " + account + "...");
+        debug("> Receiving request to get balance of account " + account + "...");
         int balance;
         activeLock.readLock().lock();
         try {
@@ -221,8 +213,8 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            // if prevTS <= valueTS , then the value is valid
-            if (prevTS.happensBefore(this.valueTimestamp) || prevTS.isEqual(this.valueTimestamp)) {
+            // If prevTS <= valueTS , then the value is valid
+            if (prevTS.happensBefore(this.valueTS) || prevTS.isEqual(this.valueTS)) {
                 synchronized (accounts) {
                     if (!accounts.containsKey(account)) {
                         debug("NOK: " + account + " does not exist");
@@ -236,12 +228,12 @@ public class ServerState {
         } finally {
             activeLock.readLock().unlock();
         }
-        debug("OK: " + balance);
+        debug("OK, balance: " + balance);
         return balance;
     }
 
     public VectorClock transferTo(String accountFrom, String accountTo, int amount, VectorClock prevTS) throws InactiveServerException, SameAccountException, InvalidAmountException, NonExistingAccountException, NotEnoughMoneyException {
-        debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
+        debug("> Receiving request to transfer " + amount + " from " + accountFrom + " to " + accountTo);
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -257,37 +249,39 @@ public class ServerState {
                 throw new InvalidAmountException(Integer.toString(amount));
             }
             synchronized (accounts) {
-                if (!accounts.containsKey(accountFrom)) {
-                    debug("NOK: " + accountFrom + " does not exist");
-                    throw new NonExistingAccountException(accountFrom);
-                }
-                if (!accounts.containsKey(accountTo)) {
-                    debug("NOK: " + accountTo + " does not exist");
-                    throw new NonExistingAccountException(accountTo);
-                }
-                if (accounts.get(accountFrom) < amount) {
-                    debug("NOK: " + accountFrom + " does not have enough money");
-                    throw new NotEnoughMoneyException(accountFrom);
-                }
-                // increment replica timestamp
+                // Increment replicaTS, set updateTS to be equal to prevTS except for the replica index
                 int replicaIndex = this.roleIndexes.get(this.role);
-                this.timestampTable.get(this.role).increment(replicaIndex);
+                VectorClock replicaTS = this.timestampTable.get(this.role);
+                replicaTS.increment(replicaIndex);
                 VectorClock updateTS = new VectorClock(prevTS.toList());
-                // updateTS is equal to prevTS, with the value in the replica index set to the same as in the replica timestamp
-                updateTS.setIndex(replicaIndex, this.timestampTable.get(this.role).getIndex(replicaIndex));
+                updateTS.setIndex(replicaIndex, replicaTS.getIndex(replicaIndex));
                 TransferOp transferOp = new TransferOp(accountFrom, accountTo, amount, prevTS, updateTS, replicaIndex);
-                //debug everything
-                debug("prevTS: " + prevTS + " updateTS: " + updateTS + " valueTS: " + this.valueTimestamp + " replicaTS: " + this.timestampTable.get(this.role).toString());
-
-                // if prevTS <= valueTS , then the value is valid
-                if (prevTS.happensBefore(this.valueTimestamp) || prevTS.isEqual(this.valueTimestamp)) {
+                debug("valueTS: " + this.valueTS + ", prevTS: " + prevTS + ", updateTS: " + updateTS + ", replicaTS: " + replicaTS);
+                // If prevTS <= valueTS , then the operation is stable
+                // TODO: change this to do only 1 check: if it doesnt happen after
+                if (prevTS.happensBefore(this.valueTS) || prevTS.isEqual(this.valueTS)) {
+                    debug("Transferring money...");
+                    if (!accounts.containsKey(accountFrom)) {
+                        debug("NOK: " + accountFrom + " does not exist");
+                        throw new NonExistingAccountException(accountFrom);
+                    }
+                    if (!accounts.containsKey(accountTo)) {
+                        debug("NOK: " + accountTo + " does not exist");
+                        throw new NonExistingAccountException(accountTo);
+                    }
+                    if (accounts.get(accountFrom) < amount) {
+                        debug("NOK: " + accountFrom + " does not have enough money");
+                        throw new NotEnoughMoneyException(accountFrom);
+                    }
                     accounts.put(accountFrom, accounts.get(accountFrom) - amount);
                     accounts.put(accountTo, accounts.get(accountTo) + amount);
                     ledger.insert(transferOp, true);
+                    this.valueTS.increment(replicaIndex);
                 } else {
+                    debug("Adding unstable operation to ledger...");
                     ledger.insert(transferOp, false);
                 }
-                debug("OK");
+                debug("OK, valueTS: " + this.valueTS);
                 return updateTS;
             }
         } finally {
@@ -295,8 +289,8 @@ public class ServerState {
         }
     }
 
-    public void receivePropagatedState(Ledger incomingLedger, VectorClock incomingReplicaTimestamp, String replicaRole) throws InactiveServerException {
-        debug("> Receiving propagated state from server with role " + replicaRole + ": " + incomingLedger.toString());
+    public void receivePropagatedState(Ledger incomingLedger, VectorClock incomingReplicaTS, String replicaRole) throws InactiveServerException {
+        debug("> Receiving propagated state from server with role " + replicaRole + ": " + incomingLedger);
         activeLock.readLock().lock();
         try {
             if (!active) {
@@ -304,16 +298,13 @@ public class ServerState {
                 throw new InactiveServerException(this.role);
             }
             int replicaIndex = this.roleIndexes.get(replicaRole);
-            //updates replica table for the replica that sent the state
-            this.timestampTable.put(replicaRole, incomingReplicaTimestamp);
-            //merges replica timestamp with incoming replica timestamp
-            this.timestampTable.get(this.role).mergeClocks(incomingReplicaTimestamp);
-
-            // adds every incoming op
-            for (Operation op : incomingLedger.getEveryOperation()) {
+            // Update timestamp table for the replica that sent the state
+            this.timestampTable.put(replicaRole, incomingReplicaTS);
+            // Merge replicaTS with incoming timestamp
+            this.timestampTable.get(this.role).mergeClocks(incomingReplicaTS);
+            // Add every incoming operation to the ledger and stabilize where possible
+            for (Operation op : incomingLedger.getEveryOperation())
                 ledger.insert(op, false);
-            }
-
             this.checkUnstableLedger();
         }
         finally {
@@ -321,35 +312,38 @@ public class ServerState {
         }
     }
 
-
     public void checkUnstableLedger() {
-        // goes through unstable ledger and checks, for every operation, if its prevTS <= valueTS. If so, sets valueTS to the updateTS of the operation
+        // Go through unstable ledger and check, for every operation, if its prevTS <= valueTS
+        // If so, set valueTS to the updateTS of the operation
         int index = 0;
         for (Operation op : ledger.getUnstableOperations()) {
-            if (op.getPrevTS().happensBefore(this.valueTimestamp) || op.getPrevTS().isEqual(this.valueTimestamp)) {
-                this.valueTimestamp.setClock(op.getUpdateTS());
+            if (op.getPrevTS().happensBefore(this.valueTS) || op.getPrevTS().isEqual(this.valueTS)) {
+                this.valueTS.setClock(op.getUpdateTS());
                 ledger.stabilize(index);
-                index++;
                 executeOperation(op);
+                index++;
             }
         }
     }
 
     public void executeOperation(Operation op) {
-        // executes operation
+        // Execute operation
         if (op instanceof TransferOp) {
             TransferOp transferOp = (TransferOp) op;
             synchronized (accounts) {
                 String accountFrom = transferOp.getAccount();
                 String accountTo = transferOp.getDestAccount();
                 int amount = transferOp.getAmount();
+                debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
                 accounts.put(accountFrom, accounts.get(accountFrom) - amount);
                 accounts.put(accountTo, accounts.get(accountTo) + amount);
             }
         } else if (op instanceof CreateOp) {
             CreateOp createOp = (CreateOp) op;
             synchronized (accounts) {
-                accounts.put(createOp.getAccount(), 0);
+                String account = createOp.getAccount();
+                debug("> Creating account " + account);
+                accounts.put(account, 0);
             }
         }
     }
@@ -410,15 +404,14 @@ public class ServerState {
     public void shutdownServices() {
         debug("> Shutting down services...");
         namingServerService.shutdownNow();
-        // TODO: change to delete all cross server services
         for (CrossServerService crossServerService : crossServerServices.values())
             if (crossServerService != null)
                 crossServerService.shutdownNow();
         debug("OK");
     }
 
-    public List<Integer> getValueTimestamp() {
-        return this.valueTimestamp.toList();
+    public List<Integer> getvalueTS() {
+        return this.valueTS.toList();
     }
 
 }
