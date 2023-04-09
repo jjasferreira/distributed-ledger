@@ -7,7 +7,7 @@ import pt.tecnico.distledger.server.grpc.CrossServerService;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.distledger.server.vectorclock.VectorClock;
-import pt.tecnico.distledger.server.domain.operation.UpdateLog;
+import pt.tecnico.distledger.server.domain.operation.Ledger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,10 +48,8 @@ public class ServerState {
     private HashMap<String, Integer> roleIndexes;
 
     // Stable operation update log
-    private UpdateLog ledger;
+    private Ledger ledger;
 
-    // Unstable operation update log
-    private UpdateLog unstableLedger;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
     private final ReadWriteLock activeLock = new ReentrantReadWriteLock();
@@ -63,9 +61,7 @@ public class ServerState {
         this.role = role;
         this.address = address;
         this.active = true;
-        // this.ledger = new ArrayList<>();
-        this.unstableLedger = new UpdateLog(false);
-        this.ledger = new UpdateLog(true);
+        this.ledger = new Ledger();
         this.accounts = new HashMap<>();
         this.setCrossServerServices();
         this.timestampTable = new HashMap<>();
@@ -167,7 +163,7 @@ public class ServerState {
             synchronized (accounts) {
                 debug("OK");
                 // TODO how to return both active and inactive operations
-                return new ArrayList<>(ledger.getOperations());
+                return new ArrayList<>(ledger.getEveryOperation());
             }
         } finally {
             activeLock.readLock().unlock();
@@ -200,13 +196,13 @@ public class ServerState {
                     }
                     debug("Creating account " + account + "...");
                     accounts.put(account, 0);
-                    ledger.insert(createOp);
+                    ledger.insert(createOp, true);
                     this.valueTimestamp.increment(replicaIndex);
                     // display new valuetimestamp
                     debug("New valueTS: " + this.valueTimestamp);
                 } else {
                     debug("Adding operation to unstable ledger...");
-                    unstableLedger.insert(createOp);
+                    ledger.insert(createOp, false);
                 }
                 debug("OK");
                 return updateTS;
@@ -287,9 +283,9 @@ public class ServerState {
                 if (prevTS.happensBefore(this.valueTimestamp) || prevTS.isEqual(this.valueTimestamp)) {
                     accounts.put(accountFrom, accounts.get(accountFrom) - amount);
                     accounts.put(accountTo, accounts.get(accountTo) + amount);
-                    ledger.insert(transferOp);
+                    ledger.insert(transferOp, true);
                 } else {
-                    unstableLedger.insert(transferOp);
+                    ledger.insert(transferOp, false);
                 }
                 debug("OK");
                 return updateTS;
@@ -299,45 +295,63 @@ public class ServerState {
         }
     }
 
-    public void receivePropagatedState(Operation op) throws InactiveServerException, UnknownOperationException {
-        /*
-        debug("> Receiving propagated state: " + op);
+    public void receivePropagatedState(Ledger incomingLedger, VectorClock incomingReplicaTimestamp, String replicaRole) throws InactiveServerException {
+        debug("> Receiving propagated state from server with role " + replicaRole + ": " + incomingLedger.toString());
         activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            if (op instanceof CreateOp) {
-                String account = op.getAccount();
-                synchronized (accounts) {
-                    accounts.put(account, 0);
-                    ledger.add(new CreateOp(account));
-                }
-            } else if (op instanceof TransferOp) {
-                TransferOp transferOp = (TransferOp) op;
+            int replicaIndex = this.roleIndexes.get(replicaRole);
+            //updates replica table for the replica that sent the state
+            this.timestampTable.put(replicaRole, incomingReplicaTimestamp);
+            //merges replica timestamp with incoming replica timestamp
+            this.timestampTable.get(this.role).mergeClocks(incomingReplicaTimestamp);
+
+            // adds every incoming op
+            for (Operation op : incomingLedger.getEveryOperation()) {
+                ledger.insert(op, false);
+            }
+
+            this.checkUnstableLedger();
+        }
+        finally {
+            activeLock.readLock().unlock();
+        }
+    }
+
+
+    public void checkUnstableLedger() {
+        // goes through unstable ledger and checks, for every operation, if its prevTS <= valueTS. If so, sets valueTS to the updateTS of the operation
+        int index = 0;
+        for (Operation op : ledger.getUnstableOperations()) {
+            if (op.getPrevTS().happensBefore(this.valueTimestamp) || op.getPrevTS().isEqual(this.valueTimestamp)) {
+                this.valueTimestamp.setClock(op.getUpdateTS());
+                ledger.stabilize(index);
+                index++;
+                executeOperation(op);
+            }
+        }
+    }
+
+    public void executeOperation(Operation op) {
+        // executes operation
+        if (op instanceof TransferOp) {
+            TransferOp transferOp = (TransferOp) op;
+            synchronized (accounts) {
                 String accountFrom = transferOp.getAccount();
                 String accountTo = transferOp.getDestAccount();
                 int amount = transferOp.getAmount();
-                synchronized (accounts) {
-                    accounts.put(accountFrom, accounts.get(accountFrom) - amount);
-                    accounts.put(accountTo, accounts.get(accountTo) + amount);
-                    ledger.add(new TransferOp(accountFrom, accountTo, amount));
-                }
-            } else if (op instanceof DeleteOp) {
-                String account = op.getAccount();
-                synchronized (accounts) {
-                    accounts.remove(account);
-                    ledger.add(new DeleteOp(account));
-                }
-            } else
-                throw new UnknownOperationException();
-        } finally {
-            activeLock.readLock().unlock();
+                accounts.put(accountFrom, accounts.get(accountFrom) - amount);
+                accounts.put(accountTo, accounts.get(accountTo) + amount);
+            }
+        } else if (op instanceof CreateOp) {
+            CreateOp createOp = (CreateOp) op;
+            synchronized (accounts) {
+                accounts.put(createOp.getAccount(), 0);
+            }
         }
-        debug("OK");
-
-        */
     }
 
     public void gossip(String role) { // TODO create new exceptions
@@ -362,9 +376,9 @@ public class ServerState {
             //get the other server's replicaTimestamp
             VectorClock otherReplicaTimestamp = timestampTable.get(role);
             //create temporary ledger (updateLog)
-            UpdateLog tempLedger = new UpdateLog();
+            Ledger tempLedger = new Ledger();
             // iterate through stable ledger operations
-            for (Operation op : ledger.getOperations()) {
+            for (Operation op : ledger.getStableOperations()) {
                 // get the prevTS
                 VectorClock prevTS = op.getPrevTS();
                 //get the replicaIndex
@@ -372,18 +386,18 @@ public class ServerState {
                 // if the replicaIndex position of the replicaTimestamp is less than the replicaIndex position of the prevTS, add to the tempLedger
                 // this means that to the knowledge of the present replica, the other replica has not yet received any updates after the one indicated by timestamp[replicaIndex]
                 if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
-                    tempLedger.insert(op);
+                    tempLedger.insert(op, false);
                 }
             }
             // iterate through unstable ledger operations
-            for (Operation op : unstableLedger.getOperations()) {
+            for (Operation op : ledger.getUnstableOperations()) {
                 VectorClock prevTS = op.getPrevTS();
                 int replicaIndex = op.getReplicaIndex();
                 if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
-                    tempLedger.insert(op);
+                    tempLedger.insert(op, false);
                 }
             }
-            if (!crossServerService.propagateState(tempLedger.getOperations(), timestampTable.get(this.role).toList())) {
+            if (!crossServerService.propagateState(tempLedger.getEveryOperation(), timestampTable.get(this.role).toList())) {
                 debug("NOK: gossiping with " + role + " failed");
                 // TODO throw exception
                 return;

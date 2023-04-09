@@ -38,4 +38,9 @@ public class Operation {
         return replicaIndex;
     }
 
+    @Override
+    public String toString() {
+        return String.format("Operation: %s %s %s %d", account, prevTS, updateTS, replicaIndex);
+    }
+
 }

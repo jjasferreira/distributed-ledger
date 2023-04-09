@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.server.vectorclock;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,9 +28,10 @@ public class VectorClock {
         this.clock.set(index, this.clock.get(index) + 1);
     }
 
-    public void mergeClocks(List<Integer> otherClock) {
+    public void mergeClocks(VectorClock otherClock) {
+        List<Integer> otherClockList = otherClock.toList();
         for (int i = 0; i < this.clock.size(); i++) {
-            this.clock.set(i, Math.max(this.clock.get(i), otherClock.get(i)));
+            this.clock.set(i, Math.max(this.clock.get(i), otherClockList.get(i)));
         }
     }
 
@@ -100,6 +102,11 @@ public class VectorClock {
     public List<Integer> toList() {
         //return copy of clock
         return this.clock.stream().collect(Collectors.toList());
+    }
+
+    public void setClock(VectorClock clock) {
+        // set this clock to a copy of the given clock
+        this.clock = new ArrayList<>(clock.toList());
     }
 
     @Override

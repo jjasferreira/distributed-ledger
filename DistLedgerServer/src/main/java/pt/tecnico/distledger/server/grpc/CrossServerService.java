@@ -30,7 +30,7 @@ public class CrossServerService {
         DistLedgerCommonDefinitions.LedgerState.Builder ledgerStateBuilder = DistLedgerCommonDefinitions.LedgerState.newBuilder();
         for (Operation op : ledger) {
             DistLedgerCommonDefinitions.Operation.Builder operation = DistLedgerCommonDefinitions.Operation.newBuilder();
-            operation.setUserId(op.getAccount()).setType(DistLedgerCommonDefinitions.OperationType.OP_UNSPECIFIED).addAllTS(op.getUpdateTS().toList()).addAllPrevTS(op.getPrevTS().toList());
+            operation.setUserId(op.getAccount()).setType(DistLedgerCommonDefinitions.OperationType.OP_UNSPECIFIED).setReplicaIndex(op.getReplicaIndex()).addAllTS(op.getUpdateTS().toList()).addAllPrevTS(op.getPrevTS().toList());
             if (op instanceof CreateOp) {
                 operation.setType(DistLedgerCommonDefinitions.OperationType.OP_CREATE_ACCOUNT);
             } else if (op instanceof DeleteOp) {
