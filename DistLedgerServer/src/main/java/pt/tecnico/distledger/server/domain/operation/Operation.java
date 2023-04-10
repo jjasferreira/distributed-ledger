@@ -2,7 +2,9 @@ package pt.tecnico.distledger.server.domain.operation;
 
 import pt.tecnico.distledger.server.vectorclock.VectorClock;
 
+
 public class Operation {
+
     private String account;
 
     private VectorClock prevTS;
@@ -40,7 +42,10 @@ public class Operation {
 
     @Override
     public String toString() {
-        return String.format("Operation: %s %s %s %d", account, prevTS, updateTS, replicaIndex);
+        return "Op: account=" + account
+                + ", prevTS=" + prevTS
+                + ", updateTS=" + updateTS
+                + ", replicaIndex=" + replicaIndex;
     }
 
 }

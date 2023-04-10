@@ -316,7 +316,7 @@ public class ServerState {
         // Go through unstable ledger and check, for every operation, if its prevTS <= valueTS
         // If so, set valueTS to the updateTS of the operation
         int index = 0;
-        for (Operation op : ledger.getUnstableOperations()) {
+        for (Operation op : ledger.getUnstableOps()) {
             if (op.getPrevTS().happensBefore(this.valueTS) || op.getPrevTS().isEqual(this.valueTS)) {
                 this.valueTS.setClock(op.getUpdateTS());
                 ledger.stabilize(index);
@@ -348,7 +348,8 @@ public class ServerState {
         }
     }
 
-    public void gossip(String role) { // TODO create new exceptions
+    public void gossip(String role) {
+        // TODO create new exceptions
         debug("> Gossiping with " + role + "...");
         activeLock.readLock().lock();
         try {
@@ -372,7 +373,7 @@ public class ServerState {
             //create temporary ledger (updateLog)
             Ledger tempLedger = new Ledger();
             // iterate through stable ledger operations
-            for (Operation op : ledger.getStableOperations()) {
+            for (Operation op : ledger.getStableOps()) {
                 // get the prevTS
                 VectorClock prevTS = op.getPrevTS();
                 //get the replicaIndex
@@ -384,7 +385,7 @@ public class ServerState {
                 }
             }
             // iterate through unstable ledger operations
-            for (Operation op : ledger.getUnstableOperations()) {
+            for (Operation op : ledger.getUnstableOps()) {
                 VectorClock prevTS = op.getPrevTS();
                 int replicaIndex = op.getReplicaIndex();
                 if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
@@ -404,14 +405,11 @@ public class ServerState {
     public void shutdownServices() {
         debug("> Shutting down services...");
         namingServerService.shutdownNow();
-        for (CrossServerService crossServerService : crossServerServices.values())
+        for (CrossServerService crossServerService : crossServerServices.values()) {
             if (crossServerService != null)
                 crossServerService.shutdownNow();
+        }
         debug("OK");
-    }
-
-    public List<Integer> getvalueTS() {
-        return this.valueTS.toList();
     }
 
 }

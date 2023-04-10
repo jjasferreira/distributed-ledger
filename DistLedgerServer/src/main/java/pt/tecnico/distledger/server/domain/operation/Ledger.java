@@ -6,39 +6,50 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 
-// import vector clock
 
-
+// This class is used to store the operations in a sorted order
+// If i<j then operations[i] happened before operations[j] or they are concurrent
+// There cannot be two of the same operation
 public class Ledger {
-    // This class is used to store the operations in a sorted order. If i<j then operations[i] happened before operations[j] or they are concurrent. There cannot be two of the same operation
-    private List<Operation> stableOperations;
 
-    private List<Operation> unstableOperations;
+    private List<Operation> stableOps;
 
-    private List<Operation> everyOperation;
+    private List<Operation> unstableOps;
 
-    private HashSet<VectorClock> existingOperations;
+    private List<Operation> allOps;
+
+    private HashSet<VectorClock> existingOps;
 
     private boolean isStable;
 
     public Ledger() {
-        stableOperations = new ArrayList<>();
-        unstableOperations = new ArrayList<>();
-        everyOperation = new ArrayList<>();
-        existingOperations = new HashSet<>();
+        stableOps = new ArrayList<>();
+        unstableOps = new ArrayList<>();
+        allOps = new ArrayList<>();
+        existingOps = new HashSet<>();
     }
 
+    public List<Operation> getStableOps() {
+        return this.stableOps;
+    }
+
+    public List<Operation> getUnstableOps() {
+        return this.unstableOps;
+    }
+
+    public List<Operation> getAllOps() {
+        return this.allOps;
+    }
 
     public void insert(Operation op, boolean isStable) {
-        if (existingOperations.contains(op.getUpdateTS())) {
+        if (existingOps.contains(op.getUpdateTS()))
             return;
-        }
-        existingOperations.add(op.getUpdateTS());
-        everyOperation.add(op);
-        List<Operation> operations = isStable ? stableOperations : unstableOperations;
-        int insertIndex = operations.size();
-        for (int i = 0; i < operations.size(); i++) {
-            Operation prevOp = operations.get(i);
+        existingOps.add(op.getUpdateTS());
+        allOps.add(op);
+        List<Operation> ops = isStable ? stableOps : unstableOps;
+        int insertIndex = ops.size();
+        for (int i = 0; i < insertIndex; i++) {
+            Operation prevOp = ops.get(i);
             // TODO: is this ordered based on prevTS or based on updateTS?
             if (op.getPrevTS().isConcurrent(prevOp.getPrevTS())) {
                 continue;
@@ -49,44 +60,29 @@ public class Ledger {
                 insertIndex = i + 1;
             }
         }
-        operations.add(insertIndex, op);
+        ops.add(insertIndex, op);
     }
 
-    public List<Operation> getStableOperations() {
-        return stableOperations;
-    }
-
-    public List<Operation> getUnstableOperations() {
-        return unstableOperations;
-    }
-
-    public List<Operation> getEveryOperation() {
-        return everyOperation;
-    }
-
-    /*
-    public void remove(int index, boolean isStable) {
-        if (isStable)
-            stableOperations.remove(index);
-        else
-            unstableOperations.remove(index);
-    }
-    */
 
     public void stabilize(int index) {
-        stableOperations.add(unstableOperations.get(index));
-        unstableOperations.remove(index);
+        stableOps.add(unstableOps.get(index));
+        unstableOps.remove(index);
     }
 
     @Override
     public String toString() {
-        /*returns a String of the form {op1};{op2};...{opn}; */
+        // Return a string of the form {op1},{op2},...,{opn}
         StringBuilder sb = new StringBuilder();
-        for (Operation op : everyOperation) {
+        int ledgerSize = allOps.size();
+        for (int i = 0; i < ledgerSize; i++) {
             sb.append("{");
-            sb.append(op.toString());
-            sb.append("};\n");
+            sb.append(allOps.get(i).toString());
+            if (i < ledgerSize - 1)
+                sb.append("},\n");
+            else
+                sb.append("}");
         }
         return sb.toString();
     }
+
 }
