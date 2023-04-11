@@ -30,8 +30,8 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
     public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
 
         LedgerState ledgerState = request.getState();
-        List<Integer> replicaTimestamp = request.getReplicaTSList();
         String replicaRole = request.getReplicaRole();
+        List<Integer> replicaTimestamp = request.getReplicaTSList();
         Ledger incomingLedger = new Ledger();
         try {
             for (DistLedgerCommonDefinitions.Operation op : ledgerState.getLedgerList()) {
@@ -45,17 +45,16 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
                     return;
                 }
                 incomingLedger.insert(operation, false);
-                state.receivePropagatedState(incomingLedger, new VectorClock(replicaTimestamp), replicaRole);
+                state.receivePropagatedState(incomingLedger, replicaRole, new VectorClock(replicaTimestamp));
             }
             PropagateStateResponse response = PropagateStateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         //TODO: catch exceptions
-        } catch (Exception e) {
+        } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
         }
         /*
-        } catch (InactiveServerException e) {
         } catch (WrongServerRoleException | UnknownOperationException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {

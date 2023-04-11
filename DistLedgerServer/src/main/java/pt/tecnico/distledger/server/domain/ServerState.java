@@ -289,7 +289,7 @@ public class ServerState {
         }
     }
 
-    public void receivePropagatedState(Ledger incomingLedger, VectorClock incomingReplicaTS, String replicaRole) throws InactiveServerException {
+    public void receivePropagatedState(Ledger incomingLedger, String replicaRole, VectorClock incomingReplicaTS) throws InactiveServerException {
         debug("> Receiving propagated state from server with role " + replicaRole + ": " + incomingLedger);
         activeLock.readLock().lock();
         try {
@@ -303,9 +303,10 @@ public class ServerState {
             // Merge replicaTS with incoming timestamp
             this.timestampTable.get(this.role).mergeClocks(incomingReplicaTS);
             // Add every incoming operation to the ledger and stabilize where possible
-            for (Operation op : incomingLedger.getEveryOperation())
+            for (Operation op : incomingLedger.getAllOps())
                 ledger.insert(op, false);
             this.checkUnstableLedger();
+            debug("OK, valueTS: " + this.valueTS);
         }
         finally {
             activeLock.readLock().unlock();
@@ -335,6 +336,7 @@ public class ServerState {
                 String accountTo = transferOp.getDestAccount();
                 int amount = transferOp.getAmount();
                 debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
+                // TODO: how do we check for exceptions here?
                 accounts.put(accountFrom, accounts.get(accountFrom) - amount);
                 accounts.put(accountTo, accounts.get(accountTo) + amount);
             }
@@ -343,59 +345,44 @@ public class ServerState {
             synchronized (accounts) {
                 String account = createOp.getAccount();
                 debug("> Creating account " + account);
+                // TODO: how do we check for exceptions here?
                 accounts.put(account, 0);
             }
         }
     }
 
-    public void gossip(String role) {
-        // TODO create new exceptions
-        debug("> Gossiping with " + role + "...");
+    public void gossip() throws InactiveServerException, NoServersFoundException, GossipFailedException {
+        debug("> Receiving request to gossip...");
         activeLock.readLock().lock();
         try {
             if (!active) {
                 debug("NOK: inactive server");
-                return;
+                throw new InactiveServerException(this.role);
             }
-            // if role cannot be found, lookup
-            if (!this.crossServerServices.containsKey(role)) {
-                this.setCrossServerServices();
-                if (!this.crossServerServices.containsKey(role)) {
-                    debug("NOK: " + role + " not found");
-                    // TODO throw exception
-                    return;
+            if (!this.setCrossServerServices()) {
+                debug("NOK: no servers found to gossip with");
+                throw new NoServersFoundException(); //TODO exception
+            }
+            // For every server in cross server services
+            for (String role : this.crossServerServices.keySet()) {
+                // Get the cross server service and the other server's replicaTS
+                CrossServerService crossServerService = this.crossServerServices.get(role);
+                VectorClock otherReplicaTS = timestampTable.get(role);
+                Ledger tempLedger = new Ledger();
+                // Iterate through all our operations, adding them to the tempLedger if we estimate that the replica has not yet seen them
+                for (Operation op : ledger.getAllOps()) {
+                    VectorClock prevTS = op.getPrevTS();
+                    int replicaIndex = op.getReplicaIndex();
+                    // If the replicaIndex position of the replicaTS is less than the replicaIndex position of the prevTS, add to the tempLedger
+                    // This means that to the knowledge of the present replica, the other has not yet received any updates after the one indicated by replicaTS[replicaIndex]
+                    if (otherReplicaTS.getIndex(replicaIndex) <= prevTS.getIndex(replicaIndex))
+                        // TODO: is is not updateTS instead of prevTS? and should we only be looking at our own index?
+                        tempLedger.insert(op, false);
                 }
-            }
-            // get the cross server service
-            CrossServerService crossServerService = this.crossServerServices.get(role);
-            //get the other server's replicaTimestamp
-            VectorClock otherReplicaTimestamp = timestampTable.get(role);
-            //create temporary ledger (updateLog)
-            Ledger tempLedger = new Ledger();
-            // iterate through stable ledger operations
-            for (Operation op : ledger.getStableOps()) {
-                // get the prevTS
-                VectorClock prevTS = op.getPrevTS();
-                //get the replicaIndex
-                int replicaIndex = op.getReplicaIndex();
-                // if the replicaIndex position of the replicaTimestamp is less than the replicaIndex position of the prevTS, add to the tempLedger
-                // this means that to the knowledge of the present replica, the other replica has not yet received any updates after the one indicated by timestamp[replicaIndex]
-                if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
-                    tempLedger.insert(op, false);
+                if (!crossServerService.propagateState(tempLedger.getAllOps(), this.role, timestampTable.get(this.role).toList())) {
+                    debug("NOK: gossiping with " + role + " failed");
+                    throw new GossipFailedException(role); //TODO exception
                 }
-            }
-            // iterate through unstable ledger operations
-            for (Operation op : ledger.getUnstableOps()) {
-                VectorClock prevTS = op.getPrevTS();
-                int replicaIndex = op.getReplicaIndex();
-                if (otherReplicaTimestamp.getIndex(replicaIndex) < prevTS.getIndex(replicaIndex)) {
-                    tempLedger.insert(op, false);
-                }
-            }
-            if (!crossServerService.propagateState(tempLedger.getEveryOperation(), timestampTable.get(this.role).toList())) {
-                debug("NOK: gossiping with " + role + " failed");
-                // TODO throw exception
-                return;
             }
         } finally {
             activeLock.readLock().unlock();

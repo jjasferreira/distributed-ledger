@@ -15,13 +15,6 @@ DISTLEDGER/REPLICAMANAGER?:
     lookup
     se não tiver crossServerService para algum, adiciona-o
 
-
-    private int replicaId;
-    private List<Integer> replicaTS;
-    private List<Integer> valueTS; // need to instantiate lists on constructor
-    private List<Operation> log;
-    // nedd to, upon reveiving prevTS = {}, to notice it is the client's first request
-    
     READS:
         if (IsReplicaUpToDateWith(prevTS)) {
             // send response + valueTS
@@ -81,9 +74,6 @@ DISTLEDGER/REPLICAMANAGER?:
 
 ### QUESTIONS:
 
-- Q: Replica Manager é uma nova classe?
-- A: Não, o stub em si é o frontend para as replicas
-
 - Q: É suposto termos vários métodos de operações de escrita em execução à espera que o valueTS seja atualizado para acabarem de correr ou saímos da função e fazemos essa verificação a cada update? O blockingStub tem alguma coisa a ver com isto?
 - A: Primeiro implementação ingénua (espera ativa), depois com tempo implementar monitors. (stor). Diz no livro que é quando recebemos uma propagação de estado que vamos verificar se as updates no log podem ser feitas. 
 
@@ -97,23 +87,14 @@ DISTLEDGER/REPLICAMANAGER?:
 - Q: Qual a diferença entre o replica timestamp e o value timestamp
 - A: Replica timestamp representa updates recebidas por front-ends diretamente para o índice da réplica, e updates propagadas por outras réplicas para os outros índices. Value timestamp representa as operações feitas, no mesmo esquema. Value timestamp é merged quando uma update é aplicada.
 
-- Q: Com que frequência é que se faz gossip? De x em x tempo?
-- A: Faz-se na linha de comandos, pelo admin
-
 - Q: É preciso ir apagando operações do log à medida que se for sabendo que todas as outras réplicas já os fizeram? (790 coulouris, ponto 3)
 - A: replicaTS sempre é atualizada quando se recebem gossips (o stor não respondeu bem a isto lol). Vamos assumir que sim.
 
 - Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à ledger e o state verifica de forma independente?
 - A: Tanto faz. Pode ter uma thread diferente para ver a ledger e fazer as operações.
 
-- Q: Admin não precisa de timestamps, certo?
-- A: Não.
-
 - Q: O que é que acontece quando fazemos gossip de um server para um outro que esteja inativo?
 - A: Dá algum erro (igual à 2a entrega)
-
-- Q: Nós removemos completamente tudo o que estava relacionado com a operação delete. Fizemos bem?
-- A: Sim, é indiferente
 
 - Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
 - A: NamingServer responde com o índice do server que se registou
@@ -145,12 +126,6 @@ Falta:
 # TODO
 - Adicionar ao state ledgers de operações estáveis e instáveis
 - Testar num ficheiro à parte se o comparator do vector state está a funcionar e listas ordenadas com base nisso. - João
-- implementar createAccount 
-	 - [X] corrigir UserServiceImplementation
-	 - [X] lógica no serverState
-- implementar transferTo
-	 - [X] corrigir UserServiceImplementation
-	 - [X] lógica no serverState
 - implementar o propagateState
 	- [ ] crossServerServiceImplementation
 	- [ ] crossServerService
@@ -162,3 +137,6 @@ Falta:
 - E se uma réplica for apagada/desativada? O que acontece às operações que já existiam na ledger?
 
 - Porque é que precisamos de separar em duas ledger as unstable operations e stable operations? Parece não nos oferecer nada de jeito
+
+- É suposto gossip e getLedgerState funcionarem quando o servidor está desligado?
+- Onde é que estamos a adicionar entradas ao roleIndexes?

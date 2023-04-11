@@ -56,7 +56,6 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
     @Override
     public void getLedgerState(GetLedgerStateRequest request, StreamObserver<GetLedgerStateResponse> responseObserver) {
         List<Operation> ledger = state.getLedger();
-
         LedgerState.Builder ledgerStateBuilder = DistLedgerCommonDefinitions.LedgerState.newBuilder();
         for (Operation op : ledger) {
             DistLedgerCommonDefinitions.Operation operation;
@@ -79,8 +78,7 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
     @Override
     public void gossip(GossipRequest request, StreamObserver<GossipResponse> responseObserver) {
         try {
-            String role = request.getRole();
-            state.gossip(role);
+            state.gossip();
             GossipResponse response = GossipResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -89,4 +87,5 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             e.printStackTrace();
         }
     }
+
 }

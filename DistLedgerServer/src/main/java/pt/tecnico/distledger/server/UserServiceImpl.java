@@ -22,7 +22,6 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
 
     @Override
     public void createAccount(CreateAccountRequest request, StreamObserver<CreateAccountResponse> responseObserver) {
-
         String username = request.getUserId();
         List<Integer> prevTS = request.getPrevTSList();
         try {
@@ -40,7 +39,6 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
-
     }
 
     @Override

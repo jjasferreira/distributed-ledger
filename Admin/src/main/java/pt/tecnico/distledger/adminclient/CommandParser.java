@@ -104,7 +104,7 @@ public class CommandParser {
             this.adminServices.put(entry.getValue(), adminService);
         }
         if (this.adminServices.containsKey(role)) {
-            debug("OK: found server with role " + role);
+            debug("OK");
             return true;
         }
         return false;
@@ -165,29 +165,21 @@ public class CommandParser {
     }
 
     private void gossip(String line) {
-        String[] split = line.split(SPACE);
-        if (split.length != 3) {
-            this.printUsage();
-            debug("NOK: unexpected number of arguments");
+        String role = lineParse(line);
+        if (role == null)
             return;
-        }
-        String roleFrom = split[1];
-        String roleTo = split[2];
-        if (roleFrom == null || roleTo == null)
-            return;
-        debug("> Gossiping from server with role " + roleFrom + "..." + " to server with role " + roleTo + "...");
-        if (!adminServices.containsKey(roleFrom) || !adminServices.containsKey(roleTo)) {
-            if (!this.lookup("DistLedger", roleFrom) || !this.lookup("DistLedger", roleTo)) {
+        debug("> Gossiping from server with role " + role + "...");
+        if (!adminServices.containsKey(role)) {
+            if (!this.lookup("DistLedger", role)) {
                 debug("NOK: no server with given role available to handle request");
                 System.err.println("No server available");
                 return;
             }
         }
-        String response = adminServices.get(roleFrom).gossip(roleTo);
+        String response = adminServices.get(role).gossip();
         debug("OK");
         System.out.println("OK");
         System.out.println(response);
-
     }
 
     private String lineParse(String line) {

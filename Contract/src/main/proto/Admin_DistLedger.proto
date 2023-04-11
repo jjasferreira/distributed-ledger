@@ -13,9 +13,7 @@ message DeactivateRequest {}
 
 message DeactivateResponse {}
 
-message GossipRequest {
-  string role = 1;
-}
+message GossipRequest {}
 
 message GossipResponse {}
 

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
+
 public class NamingServerState {
 
     private HashMap<String, ServiceEntry> services;
@@ -17,13 +18,13 @@ public class NamingServerState {
         this.debug = debug;
     }
 
-    private void debug(String debugMsg) {
+    private void debug(String message) {
         if (this.debug)
-            System.err.println("[DEBUG] " + debugMsg);
+            System.err.println("[DEBUG] " + message);
     }
 
     // register: Registers a new server in a service of the naming server list of services.
-    public Integer register(String name, String role, String address) throws AlreadyRegisteredAddressException, AlreadyRegisteredRoleException {
+    public int register(String name, String role, String address) throws AlreadyRegisteredAddressException, AlreadyRegisteredRoleException {
         debug("> Registering server " + address + " with role " + role + " to the service " + name + "...");
         synchronized (services) {
             ServiceEntry service = services.get(name);
