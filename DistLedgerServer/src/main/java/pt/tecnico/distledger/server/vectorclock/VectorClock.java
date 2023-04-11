@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 public class VectorClock {
 
     private List<Integer> clock;
@@ -30,9 +31,8 @@ public class VectorClock {
 
     public void mergeClocks(VectorClock otherClock) {
         List<Integer> otherClockList = otherClock.toList();
-        for (int i = 0; i < this.clock.size(); i++) {
+        for (int i = 0; i < this.clock.size(); i++)
             this.clock.set(i, Math.max(this.clock.get(i), otherClockList.get(i)));
-        }
     }
 
     public boolean happensBefore(VectorClock other) {
@@ -47,7 +47,7 @@ public class VectorClock {
         return this.compareClocks(other) == EventOrdering.IDENTICAL;
     }
 
-      /**
+    /**
    * Compare two vector clocks and return:<br/>
    *
    * 1. IDENTICAL if the count and values all match<br/>
@@ -57,20 +57,16 @@ public class VectorClock {
    * 5. NOT_COMPARABLE otherwise
    */
     public EventOrdering compareClocks(VectorClock other) {
-        List<Integer> otherClock = other.getClock();
-        System.out.println(otherClock);
         List<Integer> thisClock = this.getClock();
-        System.out.println(thisClock);
+        List<Integer> otherClock = other.getClock();
 
-        //if the sizes don't match, the clocks are not comparable
-        if (thisClock.size() != otherClock.size()) {
+        // If the sizes do not match, the clocks are not comparable
+        if (thisClock.size() != otherClock.size())
             return EventOrdering.NOT_COMPARABLE;
-        }
 
         // Check if the clocks are identical
-        if (thisClock.equals(otherClock)) {
+        if (thisClock.equals(otherClock))
             return EventOrdering.IDENTICAL;
-        }
 
         // Check if the clocks are ordered
         boolean happensBefore = true;
@@ -82,30 +78,28 @@ public class VectorClock {
         for (int i = 0; i < thisClock.size(); i++) {
             if (thisClock.get(i) < otherClock.get(i)) {
                 happensAfter = false;
-                elementBefore = true; // there is an element that is before another element
+                elementBefore = true; // There is an element that is before another element
             } else if (thisClock.get(i) > otherClock.get(i)) {
                 happensBefore = false;
-                elementAfter = true; // there is an element that is after another element
+                elementAfter = true; // There is an element that is after another element
             }
         }
-
-        if (elementBefore && elementAfter) {
+        if (elementBefore && elementAfter)
             return EventOrdering.CONCURRENT;
-        } else if (happensBefore) {
+        else if (happensBefore) {
             return EventOrdering.HAPPENS_BEFORE;
-        } else if (happensAfter) {
+        else if (happensAfter)
             return EventOrdering.HAPPENS_AFTER;
-        }
         return EventOrdering.NOT_COMPARABLE;
     }
 
     public List<Integer> toList() {
-        //return copy of clock
+        // Return copy of clock
         return this.clock.stream().collect(Collectors.toList());
     }
 
     public void setClock(VectorClock clock) {
-        // set this clock to a copy of the given clock
+        // Set this clock to a copy of the given clock
         this.clock = new ArrayList<>(clock.toList());
     }
 
@@ -113,4 +107,5 @@ public class VectorClock {
     public String toString() {
         return clock.toString();
     }
+
 }

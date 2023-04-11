@@ -59,14 +59,6 @@ DISTLEDGER/REPLICAMANAGER?:
         }
 ```
 
----
-
-### IDEIAS DE IMPLEMENTAÇÃO:
-
-- Cada vez que um servidor se regista no naming server, mada uma mensagem "greet" a todos os outros, para que possam atualizar os timestamps.
-  - Alternativamente, o naming server manda uma notificação a todos os outros servidores quando um novo servidor se regista.
-  - O naming server manda também no RegisterReply o número de registo (índice no timestamp) do servidor que se registou.
-
 ---	
 
 ### TODO:
@@ -84,53 +76,16 @@ DISTLEDGER/REPLICAMANAGER?:
 - A: para saber se podemos fazer um update, compara com o value timestamp
 - A (melhor): O front-end manda um unique identifier, que é registado na executed-operation table. Se o front-end receber um pedido com um unique identifier que já está na executed-operation table, ele ignora o pedido. 
 
-- Q: Qual a diferença entre o replica timestamp e o value timestamp
-- A: Replica timestamp representa updates recebidas por front-ends diretamente para o índice da réplica, e updates propagadas por outras réplicas para os outros índices. Value timestamp representa as operações feitas, no mesmo esquema. Value timestamp é merged quando uma update é aplicada.
-
-- Q: É preciso ir apagando operações do log à medida que se for sabendo que todas as outras réplicas já os fizeram? (790 coulouris, ponto 3)
-- A: replicaTS sempre é atualizada quando se recebem gossips (o stor não respondeu bem a isto lol). Vamos assumir que sim.
-
 - Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à ledger e o state verifica de forma independente?
 - A: Tanto faz. Pode ter uma thread diferente para ver a ledger e fazer as operações.
-
-- Q: O que é que acontece quando fazemos gossip de um server para um outro que esteja inativo?
-- A: Dá algum erro (igual à 2a entrega)
 
 - Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
 - A: NamingServer responde com o índice do server que se registou
 
 - Q: Gossip funciona quando servidor está desativado?
-- A: 
-
-Falta:
-- createAccount e transferTo
-	- atualiza ReplicaTs
-	- ao guardar na ledger, guarda ```(índice_replica, ts_update, operation_type, prevTS)```, em que prevTS é o timestamp que o cliente manda, e ts_update é igual mas com o valor na posição índice_replica incrementado (#TODO mudar classe operation)
-	- se prevTS <= valueTS então executa e põe na ledger de operações estáveis
-		- atualiza valueTS
-	- cc. coloca na das operações instáveis
-
-- propagateState - A manda a sua ledger a B
-	- lado do A
-		- A encontra o replica timestamp do B na sua timestamp table
-		- percorre as suas ledgers, primeiro a estável e depois a instável
-		- põe numa ledger temporária as operações por ordem, se 
-	- lado do B
-		- B recebe ledger e replica timestamp da A
-		- B atualiza timestamp table com o timestamp da A que acabou de receber
-		- faz merge do replica timestamp do B com o do A
-		- percorre a ledger da A e adiciona tudo ao log de operações instáveis (por ordem, usar o comparator que o vector clock implementa, não adiciona uma operação se a lista de operações já tiver o update_ts)
-		- percorre de novo a ledger e compara prevTS com o seu valueTS. Se prevTS <= valueTS, pode executar, e faz merge de valueTS com o updateTS.
-		- manda confirmação
+- A:
 
 # TODO
-- Adicionar ao state ledgers de operações estáveis e instáveis
-- Testar num ficheiro à parte se o comparator do vector state está a funcionar e listas ordenadas com base nisso. - João
-- implementar o propagateState
-	- [ ] crossServerServiceImplementation
-	- [ ] crossServerService
-	- [ ] função gossip
-- Testar tudo :)
 
 - Double check de verificação de exceções no state. Devem vir antes ou depois de lógica de timestamps/ledgers e afins?
 
@@ -139,4 +94,4 @@ Falta:
 - Porque é que precisamos de separar em duas ledger as unstable operations e stable operations? Parece não nos oferecer nada de jeito
 
 - É suposto gossip e getLedgerState funcionarem quando o servidor está desligado?
-- Onde é que estamos a adicionar entradas ao roleIndexes?
+- Onde é que estamos a adicionar entradas ao roleIndexes? LOOKUP DEVOLVE O ROLEINDEX 

@@ -30,7 +30,7 @@ public class NamingServerServiceImpl extends NamingServerServiceGrpc.NamingServe
             RegisterResponse response = RegisterResponse.newBuilder().setIndex(index).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } catch (AlreadyRegisteredAddressException | AlreadyRegisteredRoleException e) {
+        } catch (AlreadyRegisteredAddressException | AlreadyRegisteredRoleException e | TooManyServersException e) {
             responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());

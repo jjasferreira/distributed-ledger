@@ -28,10 +28,9 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
 
     @Override
     public void propagateState(PropagateStateRequest request, StreamObserver<PropagateStateResponse> responseObserver) {
-
         LedgerState ledgerState = request.getState();
         String replicaRole = request.getReplicaRole();
-        List<Integer> replicaTimestamp = request.getReplicaTSList();
+        List<Integer> replicaTS = request.getReplicaTSList();
         Ledger incomingLedger = new Ledger();
         try {
             for (DistLedgerCommonDefinitions.Operation op : ledgerState.getLedgerList()) {
@@ -40,29 +39,20 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
                     operation = new CreateOp(op.getUserId(), new VectorClock(op.getPrevTSList()), new VectorClock(op.getTSList()), op.getReplicaIndex());
                 else if (op.getType() == OperationType.OP_TRANSFER_TO)
                     operation = new TransferOp(op.getUserId(), op.getDestUserId(), op.getAmount(), new VectorClock(op.getPrevTSList()), new VectorClock(op.getTSList()), op.getReplicaIndex());
-                else {
-                    responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid operation type").asRuntimeException());
-                    return;
-                }
+                else if (op.getType() == OperationType.OP_UNSPECIFIED)
+                    operation = new Operation(op.getUserId(), new VectorClock(op.getPrevTSList()), new VectorClock(op.getTSList()), op.getReplicaIndex());
                 incomingLedger.insert(operation, false);
-                state.receivePropagatedState(incomingLedger, replicaRole, new VectorClock(replicaTimestamp));
+                state.receivePropagatedState(incomingLedger, replicaRole, new VectorClock(replicaTS));
             }
             PropagateStateResponse response = PropagateStateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        //TODO: catch exceptions
         } catch (InactiveServerException e) {
             responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
-        }
-        /*
-        } catch (WrongServerRoleException | UnknownOperationException e) {
-            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();
         }
-
-         */
 
     }
 

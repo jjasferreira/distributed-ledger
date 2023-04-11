@@ -61,8 +61,6 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             DistLedgerCommonDefinitions.Operation operation;
             if (op instanceof CreateOp)
                 operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_CREATE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
-            else if (op instanceof DeleteOp)
-                operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_DELETE_ACCOUNT).setUserId(op.getAccount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
             else if (op instanceof TransferOp)
                 operation = DistLedgerCommonDefinitions.Operation.newBuilder().setType(OperationType.OP_TRANSFER_TO).setUserId(op.getAccount()).setDestUserId(((TransferOp) op).getDestAccount()).setAmount(((TransferOp) op).getAmount()).addAllPrevTS(op.getPrevTS().toList()).addAllTS(op.getUpdateTS().toList()).build();
             else

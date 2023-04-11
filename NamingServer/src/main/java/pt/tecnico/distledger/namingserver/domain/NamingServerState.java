@@ -9,6 +9,8 @@ import java.util.ArrayList;
 
 public class NamingServerState {
 
+    private static final int MAX_SERVERS = 3;
+
     private HashMap<String, ServiceEntry> services;
 
     private final boolean debug;
@@ -41,6 +43,9 @@ public class NamingServerState {
                         throw new AlreadyRegisteredRoleException(role, name);
                     }
                     index++;
+                    if (index > MAX_SERVERS) {
+                        throw new TooManyServersException(role);
+                    }
                 }
             } else { // If the service does not exist, create it
                 service = new ServiceEntry(name);

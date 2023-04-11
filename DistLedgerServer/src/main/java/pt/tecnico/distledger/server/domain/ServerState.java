@@ -47,7 +47,7 @@ public class ServerState {
     private HashMap<String, VectorClock> timestampTable;
 
     // Map from role to replica index in the timestamps
-    private HashMap<String, Integer> roleIndexes;
+    private HashMap<String, Integer> roleIndex;
 
     // ReadWriteLock is preferable to synchronized call because it allows for multiple readers
     private final ReadWriteLock activeLock = new ReentrantReadWriteLock();
@@ -66,14 +66,14 @@ public class ServerState {
         this.valueTS = new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0)));
         this.timestampTable = new HashMap<>();
         this.timestampTable.put(this.role, new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0))));
-        this.roleIndexes = new HashMap<>();
+        this.roleIndex = new HashMap<>();
     }
 
     public boolean registerToNamingServer(String name, String role, String address) {
         debug("> Registering server to naming server...");
         try {
             int replicaIndex = namingServerService.register(name, role, address);
-            this.roleIndexes.put(role, replicaIndex);
+            this.roleIndex.put(role, replicaIndex);
             debug("OK");
             System.out.println("Server registered to naming server");
             return true;
@@ -102,7 +102,6 @@ public class ServerState {
     private boolean setCrossServerServices() {
         // Add all available servers to crossServerServices
         HashMap<String, String> servers = namingServerService.lookup(this.serviceName, "");
-        this.crossServerServices.clear();
         if (servers.isEmpty())
             return false;
         for (HashMap.Entry<String, String> server : servers.entrySet())
@@ -157,7 +156,7 @@ public class ServerState {
             }
             synchronized (accounts) {
                 debug("OK");
-                return new ArrayList<>(ledger.getEveryOperation());
+                return new ArrayList<>(ledger.getAllOps());
             }
         } finally {
             activeLock.readLock().unlock();
@@ -172,17 +171,16 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
+            int replicaIndex = this.roleIndex.get(this.role);
+            VectorClock updateTS = new VectorClock(prevTS.toList());
             synchronized (accounts) {
                 // Increment replicaTS, set updateTS to be equal to prevTS except for the replica index
-                int replicaIndex = this.roleIndexes.get(this.role);
                 VectorClock replicaTS = this.timestampTable.get(this.role);
                 replicaTS.increment(replicaIndex);
-                VectorClock updateTS = new VectorClock(prevTS.toList());
                 updateTS.setIndex(replicaIndex, replicaTS.getIndex(replicaIndex));
                 CreateOp createOp = new CreateOp(account, prevTS, updateTS, replicaIndex);
                 debug("valueTS: " + this.valueTS + ", prevTS: " + prevTS + ", updateTS: " + updateTS + ", replicaTS: " + replicaTS);
                 // If prevTS <= valueTS , then the operation is stable
-                // TODO: change this to do only 1 check: if it doesnt happen after
                 if (prevTS.happensBefore(this.valueTS) || prevTS.isEqual(this.valueTS)) {
                     debug("Creating account...");
                     if (accounts.containsKey(account)) {
@@ -248,17 +246,16 @@ public class ServerState {
                 debug("NOK: " + amount + " is not a valid amount");
                 throw new InvalidAmountException(Integer.toString(amount));
             }
+            int replicaIndex = this.roleIndex.get(this.role);
+            VectorClock updateTS = new VectorClock(prevTS.toList());
             synchronized (accounts) {
                 // Increment replicaTS, set updateTS to be equal to prevTS except for the replica index
-                int replicaIndex = this.roleIndexes.get(this.role);
                 VectorClock replicaTS = this.timestampTable.get(this.role);
                 replicaTS.increment(replicaIndex);
-                VectorClock updateTS = new VectorClock(prevTS.toList());
                 updateTS.setIndex(replicaIndex, replicaTS.getIndex(replicaIndex));
                 TransferOp transferOp = new TransferOp(accountFrom, accountTo, amount, prevTS, updateTS, replicaIndex);
                 debug("valueTS: " + this.valueTS + ", prevTS: " + prevTS + ", updateTS: " + updateTS + ", replicaTS: " + replicaTS);
                 // If prevTS <= valueTS , then the operation is stable
-                // TODO: change this to do only 1 check: if it doesnt happen after
                 if (prevTS.happensBefore(this.valueTS) || prevTS.isEqual(this.valueTS)) {
                     debug("Transferring money...");
                     if (!accounts.containsKey(accountFrom)) {
@@ -297,7 +294,7 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            int replicaIndex = this.roleIndexes.get(replicaRole);
+            int replicaIndex = this.roleIndex.get(replicaRole);
             // Update timestamp table for the replica that sent the state
             this.timestampTable.put(replicaRole, incomingReplicaTS);
             // Merge replicaTS with incoming timestamp
@@ -319,36 +316,50 @@ public class ServerState {
         int index = 0;
         for (Operation op : ledger.getUnstableOps()) {
             if (op.getPrevTS().happensBefore(this.valueTS) || op.getPrevTS().isEqual(this.valueTS)) {
-                this.valueTS.setClock(op.getUpdateTS());
-                ledger.stabilize(index);
                 executeOperation(op);
+                ledger.stabilize(index);
+                this.valueTS.setClock(op.getUpdateTS());
                 index++;
             }
         }
     }
 
     public void executeOperation(Operation op) {
-        // Execute operation
-        if (op instanceof TransferOp) {
-            TransferOp transferOp = (TransferOp) op;
+        if (op instanceof CreateOp) {
+            CreateOp createOp = (CreateOp) op;
+            String account = createOp.getAccount();
+            debug("> Creating account " + account);
             synchronized (accounts) {
-                String accountFrom = transferOp.getAccount();
-                String accountTo = transferOp.getDestAccount();
-                int amount = transferOp.getAmount();
-                debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
-                // TODO: how do we check for exceptions here?
+                if (accounts.containsKey(account)) {
+                    debug("NOK: " + account + " already exists");
+                    throw new AlreadyExistingAccountException(account);
+                }
+                accounts.put(account, 0);
+            }
+        } else if (op instanceof TransferOp) {
+            TransferOp transferOp = (TransferOp) op;
+            String accountFrom = transferOp.getAccount();
+            String accountTo = transferOp.getDestAccount();
+            int amount = transferOp.getAmount();
+            debug("> Transferring " + amount + " from " + accountFrom + " to " + accountTo);
+            synchronized (accounts) {
+                if (!accounts.containsKey(accountFrom)) {
+                    debug("NOK: " + accountFrom + " does not exist");
+                    throw new NonExistingAccountException(accountFrom);
+                }
+                if (!accounts.containsKey(accountTo)) {
+                    debug("NOK: " + accountTo + " does not exist");
+                    throw new NonExistingAccountException(accountTo);
+                }
+                if (accounts.get(accountFrom) < amount) {
+                    debug("NOK: " + accountFrom + " does not have enough money");
+                    throw new NotEnoughMoneyException(accountFrom);
+                }
                 accounts.put(accountFrom, accounts.get(accountFrom) - amount);
                 accounts.put(accountTo, accounts.get(accountTo) + amount);
             }
-        } else if (op instanceof CreateOp) {
-            CreateOp createOp = (CreateOp) op;
-            synchronized (accounts) {
-                String account = createOp.getAccount();
-                debug("> Creating account " + account);
-                // TODO: how do we check for exceptions here?
-                accounts.put(account, 0);
-            }
         }
+        debug("OK, valueTS: " + this.valueTS);
     }
 
     public void gossip() throws InactiveServerException, NoServersFoundException, GossipFailedException {
@@ -361,7 +372,7 @@ public class ServerState {
             }
             if (!this.setCrossServerServices()) {
                 debug("NOK: no servers found to gossip with");
-                throw new NoServersFoundException(); //TODO exception
+                throw new NoServersFoundException();
             }
             // For every server in cross server services
             for (String role : this.crossServerServices.keySet()) {
@@ -371,18 +382,20 @@ public class ServerState {
                 Ledger tempLedger = new Ledger();
                 // Iterate through all our operations, adding them to the tempLedger if we estimate that the replica has not yet seen them
                 for (Operation op : ledger.getAllOps()) {
-                    VectorClock prevTS = op.getPrevTS();
+                    VectorClock updateTS = op.getUpdateTS();
                     int replicaIndex = op.getReplicaIndex();
-                    // If the replicaIndex position of the replicaTS is less than the replicaIndex position of the prevTS, add to the tempLedger
+                    // If the replicaIndex position of the replicaTS is less than the replicaIndex position of the updateTS, add to the tempLedger
                     // This means that to the knowledge of the present replica, the other has not yet received any updates after the one indicated by replicaTS[replicaIndex]
-                    if (otherReplicaTS.getIndex(replicaIndex) <= prevTS.getIndex(replicaIndex))
-                        // TODO: is is not updateTS instead of prevTS? and should we only be looking at our own index?
+                    if (otherReplicaTS.getIndex(replicaIndex) < updateTS.getIndex(replicaIndex))
                         tempLedger.insert(op, false);
                 }
                 if (!crossServerService.propagateState(tempLedger.getAllOps(), this.role, timestampTable.get(this.role).toList())) {
                     debug("NOK: gossiping with " + role + " failed");
-                    throw new GossipFailedException(role); //TODO exception
+                    // Remove the cross server service if it is not responding
+                    this.crossServerServices.remove(role);
+                    throw new GossipFailedException(role);
                 }
+                debug("OK");
             }
         } finally {
             activeLock.readLock().unlock();
