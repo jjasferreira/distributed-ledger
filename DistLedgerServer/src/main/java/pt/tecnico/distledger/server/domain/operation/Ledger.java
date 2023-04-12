@@ -64,6 +64,10 @@ public class Ledger {
     }
 
 
+    public boolean contains(VectorClock updateTS) {
+        return existingOps.contains(updateTS);
+    }
+
     public void stabilize(int index) {
         stableOps.add(unstableOps.get(index));
         unstableOps.remove(index);

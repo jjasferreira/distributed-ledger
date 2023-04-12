@@ -50,4 +50,5 @@ public class NamingServer {
             exit(0);
         }
     }
+
 }

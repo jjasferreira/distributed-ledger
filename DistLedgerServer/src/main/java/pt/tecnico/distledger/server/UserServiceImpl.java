@@ -49,7 +49,7 @@ public class UserServiceImpl extends UserServiceGrpc.UserServiceImplBase {
             int balance = state.getBalance(username, new VectorClock(prevTS));
             BalanceResponse response = BalanceResponse.newBuilder()
                     .setValue(balance)
-                    .addAllValueTS(state.getValueTimestamp())
+                    .addAllValueTS(state.getValueTS())
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();

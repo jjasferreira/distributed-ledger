@@ -19,4 +19,12 @@ public class ServerEntry {
         return address;
     }
 
+    @Override
+    public String toString() {
+        return "ServerEntry{" +
+                "role=" + role +
+                ", address=" + address +
+                '}';
+    }
+
 }

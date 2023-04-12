@@ -60,7 +60,7 @@ public class NamingServerState {
 
     // lookup: Returns a list containing servers of a specific service and role.
     public List<ServerEntry> lookup(String name, String role) {
-        if (role != null)
+        if (role != "")
             debug("> Looking up server with role " + role + " in the service " + name + "...");
         else
             debug("> Looking up all servers in the service " + name + "...");
@@ -69,12 +69,12 @@ public class NamingServerState {
             ServiceEntry service = services.get(name);
             if (service != null) {
                 for (ServerEntry server : service.getServers()) {
-                    if (role == null || server.getRole().equals(role))
+                    if (role == "" || server.getRole().equals(role))
                         servers.add(server);
                 }
             }
         }
-        debug("OK");
+        debug("OK, retrieved: " + servers);
         return servers;
     }
 

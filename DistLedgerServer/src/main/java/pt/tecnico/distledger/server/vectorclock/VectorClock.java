@@ -29,6 +29,10 @@ public class VectorClock {
         this.clock.set(index, this.clock.get(index) + 1);
     }
 
+    public void decrement(int index) {
+        this.clock.set(index, this.clock.get(index) - 1);
+    }
+
     public void mergeClocks(VectorClock otherClock) {
         List<Integer> otherClockList = otherClock.toList();
         for (int i = 0; i < this.clock.size(); i++)
@@ -51,9 +55,9 @@ public class VectorClock {
    * Compare two vector clocks and return:<br/>
    *
    * 1. IDENTICAL if the count and values all match<br/>
-   * 2. HAPPENS_BEFORE if all tstamps of clockOne happen before those of clockTwo<br/>
-   * 3. HAPPENS_AFTER if all tstamps of clockOne happen after those of clockTwo<br/>
-   * 4. CONCURRENT if some tstamps of clockOne and clockTwo are reverse ordered<br/>
+   * 2. HAPPENS_BEFORE if all stamps of clockOne happen before those of clockTwo<br/>
+   * 3. HAPPENS_AFTER if all stamps of clockOne happen after those of clockTwo<br/>
+   * 4. CONCURRENT if some stamps of clockOne and clockTwo are reverse ordered<br/>
    * 5. NOT_COMPARABLE otherwise
    */
     public EventOrdering compareClocks(VectorClock other) {
@@ -86,7 +90,7 @@ public class VectorClock {
         }
         if (elementBefore && elementAfter)
             return EventOrdering.CONCURRENT;
-        else if (happensBefore) {
+        else if (happensBefore)
             return EventOrdering.HAPPENS_BEFORE;
         else if (happensAfter)
             return EventOrdering.HAPPENS_AFTER;

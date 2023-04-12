@@ -91,7 +91,7 @@ public class CommandParser {
     }
 
     public void updateLocalTimestamp(List<Integer> newTS) {
-        debug("OK:" + this.prevTS + "-->" + newTS);
+        debug("OK, prevTS: " + this.prevTS + " --> " + newTS);
         // Create a new list and copy the elements from newTS
         List<Integer> copiedTS = new ArrayList<>(newTS);
         int sizeTS = copiedTS.size();
@@ -100,7 +100,6 @@ public class CommandParser {
             if (copiedTS.get(i) > prevTS.get(i))
                 this.prevTS.set(i, copiedTS.get(i));
         }
-        debug("OK: updated local timestamp to " + this.prevTS);
     }
 
     private boolean lookup(String name, String role) {

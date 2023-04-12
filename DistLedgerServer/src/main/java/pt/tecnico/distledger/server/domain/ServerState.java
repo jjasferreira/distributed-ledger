@@ -59,14 +59,19 @@ public class ServerState {
         this.role = role;
         this.address = address;
         this.active = true;
-        this.setCrossServerServices();
+        this.timestampTable = new HashMap<>();
+        this.timestampTable.put(this.role, new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0))));
+        this.crossServerServices = new HashMap<>();
+        this.setCrossServerInfo();
         this.accounts = new HashMap<>();
         this.accounts.put("broker", 1000);
         this.ledger = new Ledger();
         this.valueTS = new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0)));
-        this.timestampTable = new HashMap<>();
-        this.timestampTable.put(this.role, new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0))));
         this.roleIndex = new HashMap<>();
+    }
+
+    public List<Integer> getValueTS() {
+        return this.valueTS.toList();
     }
 
     public boolean registerToNamingServer(String name, String role, String address) {
@@ -99,13 +104,21 @@ public class ServerState {
         }
     }
 
-    private boolean setCrossServerServices() {
+    private boolean setCrossServerInfo() {
         // Add all available servers to crossServerServices
         HashMap<String, String> servers = namingServerService.lookup(this.serviceName, "");
+        debug("OK, found servers with addresses: " + servers.keySet());
         if (servers.isEmpty())
             return false;
-        for (HashMap.Entry<String, String> server : servers.entrySet())
-            this.crossServerServices.put(server.getKey(), new CrossServerService(server.getKey()));
+        for (HashMap.Entry<String, String> server : servers.entrySet()) {
+            String role = server.getValue();
+            if (role.equals(this.role))
+                continue;
+            this.crossServerServices.put(role, new CrossServerService(server.getKey()));
+            // Add timestamp table entry
+            if (!timestampTable.containsKey(role))
+                this.timestampTable.put(role, new VectorClock(new ArrayList<>(Collections.nCopies(LIST_SIZE, 0))));
+        }
         return true;
     }
 
@@ -185,6 +198,7 @@ public class ServerState {
                     debug("Creating account...");
                     if (accounts.containsKey(account)) {
                         debug("NOK: " + account + " already exists");
+                        replicaTS.decrement(replicaIndex);
                         throw new AlreadyExistingAccountException(account);
                     }
                     accounts.put(account, 0);
@@ -260,14 +274,17 @@ public class ServerState {
                     debug("Transferring money...");
                     if (!accounts.containsKey(accountFrom)) {
                         debug("NOK: " + accountFrom + " does not exist");
+                        replicaTS.decrement(replicaIndex);
                         throw new NonExistingAccountException(accountFrom);
                     }
                     if (!accounts.containsKey(accountTo)) {
                         debug("NOK: " + accountTo + " does not exist");
+                        replicaTS.decrement(replicaIndex);
                         throw new NonExistingAccountException(accountTo);
                     }
                     if (accounts.get(accountFrom) < amount) {
                         debug("NOK: " + accountFrom + " does not have enough money");
+                        replicaTS.decrement(replicaIndex);
                         throw new NotEnoughMoneyException(accountFrom);
                     }
                     accounts.put(accountFrom, accounts.get(accountFrom) - amount);
@@ -294,14 +311,15 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            int replicaIndex = this.roleIndex.get(replicaRole);
             // Update timestamp table for the replica that sent the state
             this.timestampTable.put(replicaRole, incomingReplicaTS);
             // Merge replicaTS with incoming timestamp
             this.timestampTable.get(this.role).mergeClocks(incomingReplicaTS);
             // Add every incoming operation to the ledger and stabilize where possible
-            for (Operation op : incomingLedger.getAllOps())
-                ledger.insert(op, false);
+            for (Operation op : incomingLedger.getAllOps()) {
+                if (ledger.contains(op.getUpdateTS()))
+                    ledger.insert(op, false);
+            }
             this.checkUnstableLedger();
             debug("OK, valueTS: " + this.valueTS);
         }
@@ -314,14 +332,21 @@ public class ServerState {
         // Go through unstable ledger and check, for every operation, if its prevTS <= valueTS
         // If so, set valueTS to the updateTS of the operation
         int index = 0;
+        List<Integer> toDelete = new ArrayList<Integer>();
         for (Operation op : ledger.getUnstableOps()) {
             if (op.getPrevTS().happensBefore(this.valueTS) || op.getPrevTS().isEqual(this.valueTS)) {
                 executeOperation(op);
-                ledger.stabilize(index);
+                // cannot delete while iterating
+                toDelete.add(index);
                 this.valueTS.setClock(op.getUpdateTS());
+                debug("OK, valueTS: " + this.valueTS);
                 index++;
             }
         }
+        // Must be in reverse order to avoid index out of bounds
+        int toDeleteSize = toDelete.size();
+        for (int i = toDeleteSize - 1; i >= 0; i--)
+            ledger.stabilize(toDelete.get(i));
     }
 
     public void executeOperation(Operation op) {
@@ -359,7 +384,6 @@ public class ServerState {
                 accounts.put(accountTo, accounts.get(accountTo) + amount);
             }
         }
-        debug("OK, valueTS: " + this.valueTS);
     }
 
     public void gossip() throws InactiveServerException, NoServersFoundException, GossipFailedException {
@@ -370,7 +394,7 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            if (!this.setCrossServerServices()) {
+            if (!this.setCrossServerInfo()) {
                 debug("NOK: no servers found to gossip with");
                 throw new NoServersFoundException();
             }

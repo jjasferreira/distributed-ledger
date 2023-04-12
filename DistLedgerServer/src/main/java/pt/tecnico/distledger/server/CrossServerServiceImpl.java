@@ -1,5 +1,6 @@
 package pt.tecnico.distledger.server;
 
+import pt.tecnico.distledger.server.domain.exception.*;
 import pt.tecnico.distledger.server.domain.ServerState;
 import pt.tecnico.distledger.server.domain.operation.CreateOp;
 import pt.tecnico.distledger.server.domain.operation.Operation;
@@ -34,7 +35,7 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
         Ledger incomingLedger = new Ledger();
         try {
             for (DistLedgerCommonDefinitions.Operation op : ledgerState.getLedgerList()) {
-                Operation operation;
+                Operation operation = null;
                 if (op.getType() == OperationType.OP_CREATE_ACCOUNT)
                     operation = new CreateOp(op.getUserId(), new VectorClock(op.getPrevTSList()), new VectorClock(op.getTSList()), op.getReplicaIndex());
                 else if (op.getType() == OperationType.OP_TRANSFER_TO)
