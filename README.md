@@ -53,7 +53,7 @@ mvn install
 
 ```s
 cd NamingServer
-mvn compile exec:java [-Ddebug=true]
+mvn compile exec:java [-Ddebug]
 ```
 
 ###### The `-Ddebug` flag is optional and prints all interactions related to the Naming Server to the terminal.
@@ -62,12 +62,12 @@ mvn compile exec:java [-Ddebug=true]
 
 ```s
 cd DistLedgerServer
-mvn compile exec:java [-Ddebug=true]
+mvn compile exec:java [-Ddebug]
 ```
 
 ```s
 cd DistLedgerServer
-mvn compile exec:java -Dexec.args="2002 B" [-Ddebug=true]
+mvn compile exec:java -Dexec.args="2002 B" [-Ddebug]
 ```
 
 ###### The Primary Server, in this delivery, is, by default, using the address `localhost:2001`. Again, the `-Ddebug` flag is optional and prints all Server interactions to the terminal. You can change the port to any other available number, but some value must be provided.
@@ -76,12 +76,12 @@ mvn compile exec:java -Dexec.args="2002 B" [-Ddebug=true]
 
 ```s
 cd Admin
-mvn compile exec:java [-Ddebug=true]
+mvn compile exec:java [-Ddebug]
 ```
 
 ```s
 cd User
-mvn compile exec:java [-Ddebug=true]
+mvn compile exec:java [-Ddebug]
 ```
 
 ### Implementation details

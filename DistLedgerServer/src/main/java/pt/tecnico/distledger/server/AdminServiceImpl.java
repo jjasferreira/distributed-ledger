@@ -80,6 +80,10 @@ public class AdminServiceImpl extends AdminServiceGrpc.AdminServiceImplBase {
             GossipResponse response = GossipResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
+        } catch (InactiveServerException e) {
+            responseObserver.onError(UNAVAILABLE.withDescription(e.getMessage()).asRuntimeException());
+        } catch (NoServersFoundException | GossipFailedException e) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException());
         } catch (Exception e) {
             responseObserver.onError(UNKNOWN.withDescription(e.getMessage()).asRuntimeException());
             e.printStackTrace();

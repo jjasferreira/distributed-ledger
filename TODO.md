@@ -1,97 +1,24 @@
 ### TODO:
 
-```
-DISTLEDGER/REPLICAMANAGER?:
-
-    REGISTER FUNCTION:
-    when registering to naming server
-    for each replica found
-        counter++
-        cria stub, guarda numa lista indexada pelo replicaID respetivo
-    
-    this.replicaID = counter
-    
-    UPDATE FUNCTION:
-    lookup
-    se não tiver crossServerService para algum, adiciona-o
-
-    READS:
-        if (IsReplicaUpToDateWith(prevTS)) {
-            // send response + valueTS
-        }
-        else {
-            // wait for gossip and then
-            // send response + valueTS
-        }
-
-    private boolean IsReplicaUpToDateWith(List<Integer> prevTS) {
-        sizeTS = prevTS.size();
-        for (int i = 0; i < sizeTS; i++) {
-            if (prevTS[i] > this.valueTS[i])
-                return false;
-        }
-        return true;
-    }
-
-    UPDATES:
-        // check if it is repeated, in which case it is ignored (look for the prevTS id?)
-        // increment index of corresponding replicaId in replicaTS (+1)
-        // create new modifiedTS (prevTS but with new value above, so that it is unique)
-        // append operation to log and send the new TS to client (the whole vector or simply the update ID?)
-        
-        // do this check periodically?:
-        if (IsReplicaUpToDateWith(prevTS)) {
-            // do the update locally, add to ledger
-            // update valueTS (for each i, if replicaTS[i] > valueTS[i] , update it
-            // when a new update is made, we check
-            // if we can do pending ones? (create function)
-        }
-
-    GOSSIP:
-        sizeTS = receivedTS.size();
-        for (int i = 0; i < sizeTS; i++) {
-            n = receivedTS[i] - replicaTS[i];
-            if (n <= 0)
-                continue;
-            else {
-                // ask for last n operations from replica i's log
-            }
-        }
-```
-
----	
-
-### TODO:
-- Naming server rejeita quarto servidor a registar
+- Testar Naming server rejeita quarto servidor a registar
 
 ### QUESTIONS:
 
 - Q: É suposto termos vários métodos de operações de escrita em execução à espera que o valueTS seja atualizado para acabarem de correr ou saímos da função e fazemos essa verificação a cada update? O blockingStub tem alguma coisa a ver com isto?
-- A: Primeiro implementação ingénua (espera ativa), depois com tempo implementar monitors. (stor). Diz no livro que é quando recebemos uma propagação de estado que vamos verificar se as updates no log podem ser feitas. 
+- A: Primeiro implementação ingénua (espera ativa), depois com tempo implementar monitors. (stor). Diz no livro que é quando recebemos uma propagação de estado que vamos verificar se as updates no log podem ser feitas.
 
-- Q: Ao fazer gossip, temos que enviar, para além do vector clock, também o log sempre? Não podemos esperar por uma resposta da outra replica a dizer quantas operações quer e apenas mandar essas? E como sabemos a ordem pela qual foram efetuadas, ou isso não é importante?
-- A: temos uma lista de gossips recebidos para cada server e só mandamos o que estimamos que ele ainda não tenha.
-
-- Q: Como é que verificamos que um update é repetido? Pelo timestamp que ele tem guardado em si?
-- A: para saber se podemos fazer um update, compara com o value timestamp
-- A (melhor): O front-end manda um unique identifier, que é registado na executed-operation table. Se o front-end receber um pedido com um unique identifier que já está na executed-operation table, ele ignora o pedido. 
-
-- Q: Ao receber um pedido cujo prevTS seja inferior, podemos invocar a função do state diretamente ou devemos adicionar à ledger e o state verifica de forma independente?
-- A: Tanto faz. Pode ter uma thread diferente para ver a ledger e fazer as operações.
-
-- Q: Como definir que réplica assume certo índice nos timestamps? Ir ao NamingServer e calcular número de servers existentes?
-- A: NamingServer responde com o índice do server que se registou
-
-- Q: Gossip funciona quando servidor está desativado?
+- Q: Como é que é com os pedidos de leitura? Sempre devolvemos apenas um erro quando op.prevTS > valueTS? Ou fazemos outro mecanismo de espera. wait/notify?
 - A:
 
-# TODO
+### ADD TO REPORT:
 
-- Double check de verificação de exceções no state. Devem vir antes ou depois de lógica de timestamps/ledgers e afins?
-
-- E se uma réplica for apagada/desativada? O que acontece às operações que já existiam na ledger?
-
-- Porque é que precisamos de separar em duas ledger as unstable operations e stable operations? Parece não nos oferecer nada de jeito
-
-- É suposto gossip e getLedgerState funcionarem quando o servidor está desligado?
-- Onde é que estamos a adicionar entradas ao roleIndexes? LOOKUP DEVOLVE O ROLEINDEX 
+- NamingServer devolve o índice do servidor que se registou a ele mesmo e esse índice corresponde à entrada do VectorClock que corresponde ao servidor que se registou.
+- Implementámos uma solução para 3 servidores (<_,_,\_>) e isso é uma MACRO que pode ser alterada em vários ficheiros
+- O NamingServer não aceita registar mais do que 3 servidores
+- Criamos uma classe Ledger que contém uma lista de ops instáveis e outra estáveis, em vez de ter um atributo (facilita a verificação das ops instávies). A inserção de ops na ledger respeita a relação happensBefore dos vectorClocks
+- Criamos novas exceções e apagamos que outras que já não faziam sentido
+- O Cliente não usa VectorClock (classe que definimos no lado do servidor) porque não precisa de realizar operações complexas sobre estes (é apenas uma lista de inteiros na perspetiva do cliente)
+- O gossip do Admin recebe apenas um argumento e manda pedido a esse servidor para propagar para todos os outros que existam no momento
+- Tivemos que criar a classe BalanceInfo para conter os dois argumentos de resposta que esta operaçao devolve (o valor e o timestamp(que corresponde ao vectorClock))
+- A operação delete foi descontinuada porque não conseguimos garantir, na arquitetura Gossip, que respeite a causalidade. Iria requerir causalidade imediata.
+- O tratamento de exceções relativas a argumentos que estariam sempre errados, aquando da criação de conta ou transferência de fundos, é realizada logo quando se recebe o pedido de operação. No entanto, a verificação de erros mais contextuais (como o caso em que transferimos de uma conta que ainda não existe, porque a sua criação foi feita noutra réplica), decorre apenas no momento em que a dada réplica recebe essa operação vinda de um gossip. Nos casos em que o op.prevTS > valueTS, estas operações são adicionadas à lista de ops instáveis ad ledger e não decorre a verificação de exceções precisamente por receio de que de facto os argumentos estejam afinal todos corretos, mas o servidor atual ainda desconheça as operações anteriores que garantem isso mesmo. Mesmo nos casos em que a operação não foi realizada porque lançou uma exceção, permanece na ledger (eventualmente de todas as réplicas) como uma operação instável.

@@ -43,9 +43,8 @@ public class NamingServerState {
                         throw new AlreadyRegisteredRoleException(role, name);
                     }
                     index++;
-                    if (index > MAX_SERVERS) {
+                    if (index > MAX_SERVERS)
                         throw new TooManyServersException(role);
-                    }
                 }
             } else { // If the service does not exist, create it
                 service = new ServiceEntry(name);
@@ -100,4 +99,5 @@ public class NamingServerState {
         debug("NOK: address " + address + " does not exist for service " + name);
         throw new NonExistingAddressException(address, name);
     }
+    
 }

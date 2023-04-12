@@ -46,4 +46,5 @@ public class NamingServerService {
     public void shutdownNow() {
         channel.shutdownNow();
     }
+    
 }

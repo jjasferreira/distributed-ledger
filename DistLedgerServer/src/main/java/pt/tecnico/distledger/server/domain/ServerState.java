@@ -159,20 +159,11 @@ public class ServerState {
         debug("OK");
     }
 
-    public List<Operation> getLedger() throws InactiveServerException {
+    public List<Operation> getLedger() {
         debug("> Receiving request to get ledger...");
-        activeLock.readLock().lock();
-        try {
-            if (!active) {
-                debug("NOK: inactive server");
-                throw new InactiveServerException(this.role);
-            }
-            synchronized (accounts) {
-                debug("OK");
-                return new ArrayList<>(ledger.getAllOps());
-            }
-        } finally {
-            activeLock.readLock().unlock();
+        synchronized (accounts) {
+        debug("OK");
+        return new ArrayList<>(ledger.getAllOps());
         }
     }
 
@@ -317,7 +308,7 @@ public class ServerState {
             this.timestampTable.get(this.role).mergeClocks(incomingReplicaTS);
             // Add every incoming operation to the ledger and stabilize where possible
             for (Operation op : incomingLedger.getAllOps()) {
-                if (ledger.contains(op.getUpdateTS()))
+                if (!ledger.contains(op.getUpdateTS()))
                     ledger.insert(op, false);
             }
             this.checkUnstableLedger();
