@@ -96,22 +96,11 @@ public class Ledger {
     public String toString() {
         // Return a string of the form {op1},{op2},...,{opn}
         StringBuilder sb = new StringBuilder();
-        int stableSize = stableOps.size();
-        int unstableSize = unstableOps.size();
-        for (int i = 0; i < stableSize; i++) {
+        int allSize = allOps.size();
+        for (int i = 0; i < allSize; i++) {
             sb.append("{");
             sb.append(stableOps.get(i).toString());
-            sb.append("state: stable");
-            if (i < stableSize - 1)
-                sb.append("},\n");
-            else
-                sb.append("}");
-        }
-        for (int i = 0; i < unstableSize; i++) {
-            sb.append("{");
-            sb.append(unstableOps.get(i).toString());
-            sb.append("state: unstable");
-            if (i < unstableSize - 1)
+            if (i < allSize - 1)
                 sb.append("},\n");
             else
                 sb.append("}");

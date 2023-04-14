@@ -109,9 +109,11 @@ public class ServerState {
     private boolean setCrossServerInfo() {
         // Add all available servers to crossServerServices
         HashMap<String, String> servers = namingServerService.lookup(this.serviceName, "");
-        debug("OK, found servers with addresses: " + servers.keySet());
-        if (servers.isEmpty())
+        if (servers.isEmpty()) {
+            debug("OK: no other servers found");
             return false;
+        }
+        debug("OK, found servers with addresses: " + servers.keySet());
         for (HashMap.Entry<String, String> server : servers.entrySet()) {
             String role = server.getValue();
             if (role.equals(this.role))

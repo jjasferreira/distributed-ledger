@@ -76,7 +76,7 @@ mvn compile exec:java -Dexec.args="2002 B" [-Ddebug]
 
 ```s
 cd Admin
-mvn compile exec:java [-Ddebug]
+cd
 ```
 
 ```s
@@ -84,7 +84,7 @@ cd User
 mvn compile exec:java [-Ddebug]
 ```
 
-### Implementation details
+### Implementation details regarding the 1st and 2nd delivery
 
 - We had implemented the `debug` functionality only on the Server for the 1st delivery, as we felt it would be pointless to have it on the User and Admin sides. On the 2nd delivery, we have added this functionality to the User, Admin and Naming Server, as we felt it would be useful to have it on all processes.
 - Since there is the risk of an admin setting the server state to inactive in the middle of the execution of another client's operation, we figured it was important to guarantee the atomicity of every operation. However, the use of `synchronized` blocks would make it so that any two operations cannot be executed simultaneously, as they all require confirmation that the server is active and that it will remain so until the end of the operation. In other words, the `active` attribute is accessed for "reads" much more often than for "writes". Therefore, we decided to use a read/write lock, which allows for multiple operations to be executed at the same time when the server is active, yet prevents admins from being able to change server state in the middle of an operation, guaranteeing atomicity. For operations which access the `accounts` hash map, we use `synchronized` blocks with `accounts` as the synchronization object, in order to ensure that no two processes read or write to the hash map at any given time. Any access to the `ledger` attribute is also nested inside of one of these blocks, which also guarantees that it is thread-safe.

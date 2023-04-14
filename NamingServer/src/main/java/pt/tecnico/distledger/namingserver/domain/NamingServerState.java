@@ -73,7 +73,10 @@ public class NamingServerState {
                 }
             }
         }
-        debug("OK, retrieved: " + servers);
+        if (servers.isEmpty())
+            debug("OK: no other servers found");
+        else
+            debug("OK, retrieved: " + servers);
         return servers;
     }
 
