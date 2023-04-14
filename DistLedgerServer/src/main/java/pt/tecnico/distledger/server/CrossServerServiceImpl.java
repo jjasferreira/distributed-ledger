@@ -43,8 +43,8 @@ public class CrossServerServiceImpl extends DistLedgerCrossServerServiceGrpc.Dis
                 else if (op.getType() == OperationType.OP_UNSPECIFIED)
                     operation = new Operation(op.getUserId(), new VectorClock(op.getPrevTSList()), new VectorClock(op.getTSList()), op.getReplicaIndex());
                 incomingLedger.insert(operation, false);
-                state.receivePropagatedState(incomingLedger, replicaRole, new VectorClock(replicaTS));
             }
+            state.receivePropagatedState(incomingLedger, replicaRole, new VectorClock(replicaTS));
             PropagateStateResponse response = PropagateStateResponse.newBuilder().build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();

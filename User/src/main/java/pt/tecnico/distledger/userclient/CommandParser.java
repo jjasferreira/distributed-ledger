@@ -106,6 +106,8 @@ public class CommandParser {
         // Lookup for servers with the given service and role. Returns true if a server with the given role is found
         debug("> Looking for available servers with service " + name + " and role " + role + "...");
         HashMap<String, String> servers = namingServerService.lookup(name, role);
+        for (HashMap.Entry<String, UserService> service : userServices.entrySet())
+            service.getValue().shutdownNow();
         this.userServices.clear();
         if (servers.isEmpty()) {
             debug("NOK: no server found");

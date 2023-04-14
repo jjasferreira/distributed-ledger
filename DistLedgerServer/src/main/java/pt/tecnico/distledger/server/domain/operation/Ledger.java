@@ -18,7 +18,7 @@ public class Ledger {
 
     private List<Operation> allOps;
 
-    private HashSet<VectorClock> existingOps;
+    private HashSet<List<Integer>> existingOps;
 
     private boolean isStable;
 
@@ -42,13 +42,33 @@ public class Ledger {
     }
 
     public void insert(Operation op, boolean isStable) {
-        if (existingOps.contains(op.getUpdateTS()))
+        if (existingOps.contains(op.getUpdateTS().toList()))
             return;
-        existingOps.add(op.getUpdateTS());
-        allOps.add(op);
+        existingOps.add(op.getUpdateTS().toList());
+        int size = allOps.size();
+        int insertIndex = 0;
+        for (int i = 0; i < size; i++) {
+            Operation prevOp = allOps.get(i);
+            // TODO: is this ordered based on prevTS or based on updateTS?
+            if (op.getPrevTS().isConcurrent(prevOp.getPrevTS())) {
+                continue;
+            } else if (op.getPrevTS().happensBefore(prevOp.getPrevTS())) {
+                insertIndex = i;
+                break;
+            } else {
+                insertIndex = size;
+            }
+        }
+        allOps.add(insertIndex, op);
+        this.addToSubLedger(op, isStable);
+    }
+
+
+    public void addToSubLedger(Operation op, boolean isStable) {
         List<Operation> ops = isStable ? stableOps : unstableOps;
-        int insertIndex = ops.size();
-        for (int i = 0; i < insertIndex; i++) {
+        int insertIndex = 0;
+        int size = ops.size();
+        for (int i = 0; i < size; i++) {
             Operation prevOp = ops.get(i);
             // TODO: is this ordered based on prevTS or based on updateTS?
             if (op.getPrevTS().isConcurrent(prevOp.getPrevTS())) {
@@ -57,19 +77,18 @@ public class Ledger {
                 insertIndex = i;
                 break;
             } else {
-                insertIndex = i + 1;
+                insertIndex = size;
             }
         }
         ops.add(insertIndex, op);
     }
 
-
     public boolean contains(VectorClock updateTS) {
-        return existingOps.contains(updateTS);
+        return existingOps.contains(updateTS.toList());
     }
 
     public void stabilize(int index) {
-        stableOps.add(unstableOps.get(index));
+        this.addToSubLedger(unstableOps.get(index), true);
         unstableOps.remove(index);
     }
 
@@ -77,16 +96,26 @@ public class Ledger {
     public String toString() {
         // Return a string of the form {op1},{op2},...,{opn}
         StringBuilder sb = new StringBuilder();
-        int ledgerSize = allOps.size();
-        for (int i = 0; i < ledgerSize; i++) {
+        int stableSize = stableOps.size();
+        int unstableSize = unstableOps.size();
+        for (int i = 0; i < stableSize; i++) {
             sb.append("{");
-            sb.append(allOps.get(i).toString());
-            if (i < ledgerSize - 1)
+            sb.append(stableOps.get(i).toString());
+            sb.append("state: stable");
+            if (i < stableSize - 1)
+                sb.append("},\n");
+            else
+                sb.append("}");
+        }
+        for (int i = 0; i < unstableSize; i++) {
+            sb.append("{");
+            sb.append(unstableOps.get(i).toString());
+            sb.append("state: unstable");
+            if (i < unstableSize - 1)
                 sb.append("},\n");
             else
                 sb.append("}");
         }
         return sb.toString();
     }
-
 }

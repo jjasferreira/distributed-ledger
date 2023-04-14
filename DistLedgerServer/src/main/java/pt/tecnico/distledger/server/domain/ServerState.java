@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.HashMap;
 import java.util.concurrent.locks.*;
 
+import static io.grpc.Status.UNAVAILABLE;
+
 
 public class ServerState {
 
@@ -159,11 +161,27 @@ public class ServerState {
         debug("OK");
     }
 
+    public List<Operation> getUnstableLedger() {
+        debug("> Receiving request to get unstable ledger...");
+        synchronized (accounts) {
+            debug("OK");
+            return new ArrayList<>(ledger.getUnstableOps());
+        }
+    }
+
+    public List<Operation> getStableLedger() {
+        debug("> Receiving request to get stable ledger...");
+        synchronized (accounts) {
+            debug("OK");
+            return new ArrayList<>(ledger.getStableOps());
+        }
+    }
+
     public List<Operation> getLedger() {
         debug("> Receiving request to get ledger...");
         synchronized (accounts) {
-        debug("OK");
-        return new ArrayList<>(ledger.getAllOps());
+            debug("OK");
+            return new ArrayList<>(ledger.getAllOps());
         }
     }
 
@@ -188,7 +206,7 @@ public class ServerState {
                 if (prevTS.happensBefore(this.valueTS) || prevTS.isEqual(this.valueTS)) {
                     debug("Creating account...");
                     if (accounts.containsKey(account)) {
-                        debug("NOK: " + account + " already exists");
+                        debug("NOK: " + account + " already exists (create account)");
                         replicaTS.decrement(replicaIndex);
                         throw new AlreadyExistingAccountException(account);
                     }
@@ -326,7 +344,11 @@ public class ServerState {
         List<Integer> toDelete = new ArrayList<Integer>();
         for (Operation op : ledger.getUnstableOps()) {
             if (op.getPrevTS().happensBefore(this.valueTS) || op.getPrevTS().isEqual(this.valueTS)) {
-                executeOperation(op);
+                try {
+                    executeOperation(op);
+                } catch (AlreadyExistingAccountException | NonExistingAccountException | NotEnoughMoneyException e) {
+                    debug(e.getMessage());
+                }
                 // cannot delete while iterating
                 toDelete.add(index);
                 this.valueTS.setClock(op.getUpdateTS());
@@ -340,14 +362,15 @@ public class ServerState {
             ledger.stabilize(toDelete.get(i));
     }
 
-    public void executeOperation(Operation op) {
+    public void executeOperation(Operation op) throws AlreadyExistingAccountException, NonExistingAccountException, NotEnoughMoneyException {
         if (op instanceof CreateOp) {
             CreateOp createOp = (CreateOp) op;
             String account = createOp.getAccount();
             debug("> Creating account " + account);
             synchronized (accounts) {
                 if (accounts.containsKey(account)) {
-                    debug("NOK: " + account + " already exists");
+                    debug("NOK: accounts:" + accounts);
+                    debug("NOK: " + account + " already exists (execute operation)");
                     throw new AlreadyExistingAccountException(account);
                 }
                 accounts.put(account, 0);
@@ -403,7 +426,9 @@ public class ServerState {
                     // This means that to the knowledge of the present replica, the other has not yet received any updates after the one indicated by replicaTS[replicaIndex]
                     if (otherReplicaTS.getIndex(replicaIndex) < updateTS.getIndex(replicaIndex))
                         tempLedger.insert(op, false);
+                    //debug templedger
                 }
+                debug("Sending propagated state:" + tempLedger.toString());
                 if (!crossServerService.propagateState(tempLedger.getAllOps(), this.role, timestampTable.get(this.role).toList())) {
                     debug("NOK: gossiping with " + role + " failed");
                     // Remove the cross server service if it is not responding
