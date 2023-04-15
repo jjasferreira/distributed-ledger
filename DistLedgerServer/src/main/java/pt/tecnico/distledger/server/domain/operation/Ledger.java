@@ -99,7 +99,7 @@ public class Ledger {
         int allSize = allOps.size();
         for (int i = 0; i < allSize; i++) {
             sb.append("{");
-            sb.append(stableOps.get(i).toString());
+            sb.append(allOps.get(i).toString());
             if (i < allSize - 1)
                 sb.append("},\n");
             else
