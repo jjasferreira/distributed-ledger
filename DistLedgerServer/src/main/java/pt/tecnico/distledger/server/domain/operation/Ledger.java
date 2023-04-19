@@ -49,7 +49,6 @@ public class Ledger {
         int insertIndex = 0;
         for (int i = 0; i < size; i++) {
             Operation prevOp = allOps.get(i);
-            // TODO: is this ordered based on prevTS or based on updateTS?
             if (op.getPrevTS().isConcurrent(prevOp.getPrevTS())) {
                 continue;
             } else if (op.getPrevTS().happensBefore(prevOp.getPrevTS())) {
@@ -70,7 +69,6 @@ public class Ledger {
         int size = ops.size();
         for (int i = 0; i < size; i++) {
             Operation prevOp = ops.get(i);
-            // TODO: is this ordered based on prevTS or based on updateTS?
             if (op.getPrevTS().isConcurrent(prevOp.getPrevTS())) {
                 continue;
             } else if (op.getPrevTS().happensBefore(prevOp.getPrevTS())) {
