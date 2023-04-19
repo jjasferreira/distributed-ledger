@@ -15,6 +15,6 @@ Note: Implementation notes regarding the 1st and 2nd delivery are available [her
 
 ### Made by:
 
-92424 - [André Azevedo](https://github.com/andremazevedo>)
-99251 - [João Cardoso](https://github.com/joaoncardoso>)
-99259 - [José João Ferreira](https://github.com/jjasferreira>)
+- 92424 - [André Azevedo](https://github.com/andremazevedo>)
+- 99251 - [João Cardoso](https://github.com/joaoncardoso>)
+- 99259 - [José João Ferreira](https://github.com/jjasferreira>)

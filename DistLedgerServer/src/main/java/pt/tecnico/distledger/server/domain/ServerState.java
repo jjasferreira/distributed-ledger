@@ -322,16 +322,18 @@ public class ServerState {
                 debug("NOK: inactive server");
                 throw new InactiveServerException(this.role);
             }
-            // Update timestamp table for the replica that sent the state
-            this.timestampTable.put(replicaRole, incomingReplicaTS);
-            // Merge replicaTS with incoming timestamp
-            this.timestampTable.get(this.role).mergeClocks(incomingReplicaTS);
-            // Add every incoming operation to the ledger and stabilize where possible
-            for (Operation op : incomingLedger.getAllOps()) {
-                if (!ledger.contains(op.getUpdateTS()))
-                    ledger.insert(op, false);
+            synchronized (accounts) {
+                // Update timestamp table for the replica that sent the state
+                this.timestampTable.put(replicaRole, incomingReplicaTS);
+                // Merge replicaTS with incoming timestamp
+                this.timestampTable.get(this.role).mergeClocks(incomingReplicaTS);
+                // Add every incoming operation to the ledger and stabilize where possible
+                for (Operation op : incomingLedger.getAllOps()) {
+                    if (!ledger.contains(op.getUpdateTS()))
+                        ledger.insert(op, false);
+                }
+                this.checkUnstableLedger();
             }
-            this.checkUnstableLedger();
             debug("OK, valueTS: " + this.valueTS);
         }
         finally {
